@@ -42,7 +42,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                 else:
                     max_volume_price, max_volume_volume = sorted(asks.items(), key=lambda x: x[1])[-1]
                     second_volume_price, second_volume_volume = sorted(asks.items(), key=lambda x: x[1])[-2]
-                    potential_stop = max_volume_price + best_price_dist
+                    potential_stop = max_volume_price + (max_volume_price * best_price_dist) / 100
                     potential_take = best_bid - abs(potential_stop - best_bid) - 0.001 * best_bid
 
                     level_in_ask = level in asks.keys()
@@ -79,7 +79,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                 else:
                     max_volume_price, max_volume_volume = sorted(bids.items(), key=lambda x: x[1])[-1]
                     second_volume_price, second_volume_volume = sorted(bids.items(), key=lambda x: x[1])[-2]
-                    potential_stop = max_volume_price - best_price_dist
+                    potential_stop = max_volume_price - (max_volume_price * best_price_dist) / 100
                     potential_take = best_ask + abs(best_ask - potential_stop) + 0.001 * best_ask
 
                     level_in_bid = level in bids.keys()
