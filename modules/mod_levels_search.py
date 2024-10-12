@@ -24,9 +24,9 @@ personal_id = int(os.getenv('PERSONAL_ID'))
 def upper_levels_check(c_high, i, w):
     check_list = c_high[-i: -1]
     check_list_max = max(check_list)
-    max_indices = [b for b, v in enumerate(check_list) if v == check_list_max]
+    max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_max]
 
-    if len(max_indices) > 1 and check_list_max not in check_list[:5] and check_list_max not in check_list[-w:]:
+    if len(max_indices) > 1:
         for g in range(1, len(max_indices)):
             window = check_list[max_indices[g - 1] + 1:max_indices[g]]
             if len(window) >= w:  # and all(v <= check_list_max for v in window):
@@ -44,9 +44,9 @@ def upper_levels_check(c_high, i, w):
 def lower_levels_check(c_low, i, w):
     check_list = c_low[-i: -1]
     check_list_min = min(check_list)
-    min_indices = [b for b, v in enumerate(check_list) if v == check_list_min]
+    min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_min]
 
-    if len(min_indices) > 1 and check_list_min not in check_list[:5] and check_list_min not in check_list[-w:]:
+    if len(min_indices) > 1:
         for g in range(1, len(min_indices)):
             window = check_list[min_indices[g - 1] + 1:min_indices[g]]
             if len(window) >= w:  # and all(v >= check_list_min for v in window):
