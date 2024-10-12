@@ -71,6 +71,14 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                             # personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
                             sent_messages.append((symbol, h, m, level, 'level_in_ask'))
                             print('NOT A TRADE\n' + msg)
+
+                    elif volume_verified and entry_position:
+                        if (symbol, h, m, level, 'top_volume_found_dn') not in sent_messages:
+                            msg = (f'{symbol} ({market_type})\n'
+                                   f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)}%)'
+                                   f'Avg volume: {avg_vol} ({int((abs(best_ask - max_volume_price) / (max_volume_price / 100)) / avg_vol)} times smaller than max)')
+                            personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
+                            sent_messages.append((symbol, h, m, level, 'top_volume_found_dn'))
                     # else:
                     #     print(f'{symbol} level {level} {side} in {current_distance}%')
             if side == 'dn':
@@ -108,11 +116,22 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                             # personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
                             sent_messages.append((symbol, h, m, level, 'level_in_bid'))
                             print('NOT A TRADE\n' + msg)
+
+                    elif volume_verified and entry_position:
+                        if (symbol, h, m, level, 'top_volume_found_up') not in sent_messages:
+                            msg = (f'{symbol} ({market_type})\n'
+                                   f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)}%)'
+                                   f'Avg volume: {avg_vol} ({int((abs(best_bid - max_volume_price) / (max_volume_price / 100)) / avg_vol)} times smaller than max)')
+                            personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
+                            sent_messages.append((symbol, h, m, level, 'top_volume_found_up'))
+
                     # else:
                     #     print(f'{symbol} level {level} {side} in {current_distance}%')
 
             if side not in ['up', 'dn']:
                 print('Wrong side! : ', side)
+
+
 
 
 async def connect_and_listen(stream_url):
