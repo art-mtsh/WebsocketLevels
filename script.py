@@ -9,6 +9,8 @@ from modules.global_stopper import global_stop, stopper_setter, sent_messages
 
 setup_logger()
 
+# Define the lock
+tracked_levels_lock = asyncio.Lock()
 
 async def monitor_time_and_control_threads():
     while True:
@@ -24,10 +26,11 @@ async def monitor_time_and_control_threads():
         await levels_task
         await listener_task
 
-        dropped_levels.clear()
-        tracked_levels.clear()
-        global_stop.clear()
-        sent_messages.clear()
+        async with tracked_levels_lock:
+            dropped_levels.clear()
+            tracked_levels.clear()
+            global_stop.clear()
+            sent_messages.clear()
 
 
 if __name__ == '__main__':
