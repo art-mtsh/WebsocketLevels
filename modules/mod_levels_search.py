@@ -34,7 +34,7 @@ def upper_levels_check(c_high, i, w):
 
     wiggle_room = float(os.getenv('WIGGLE_ROOM', 0.02)) / 100
     max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
-    if len(max_indices) > 2:
+    if len(max_indices) > 1:
         for g in range(1, len(max_indices)):
             window = check_list[max_indices[g - 1] + 1:max_indices[g]]
             if len(window) >= w and all(v <= check_list_max for v in window):
@@ -54,7 +54,7 @@ def lower_levels_check(c_low, i, w):
 
     wiggle_room = float(os.getenv('WIGGLE_ROOM', 0.02)) / 100
     min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
-    if len(min_indices) > 2:
+    if len(min_indices) > 1:
         for g in range(1, len(min_indices)):
             window = check_list[min_indices[g - 1] + 1:min_indices[g]]
             if len(window) >= w and all(v >= check_list_min for v in window):
