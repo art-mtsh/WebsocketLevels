@@ -3,7 +3,9 @@ import threading
 import logging
 import asyncio
 import time
+import telebot
 from datetime import datetime
+from dotenv import load_dotenv
 from modules.get_pairsV5 import combined_klines
 from main_log_config import setup_logger
 from modules.global_stopper import global_stop
@@ -12,6 +14,11 @@ setup_logger()
 
 tracked_levels = {}
 dropped_levels = set()
+load_dotenv('keys.env')
+
+bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
+personal_bot = telebot.TeleBot(bot_token)
+personal_id = int(os.getenv('PERSONAL_ID'))
 
 
 def upper_levels_check(c_high, i, w):
@@ -123,7 +130,11 @@ async def levels_threads(coins_list):
         the_threads.append(thread)
     for thread in the_threads:
         await asyncio.to_thread(thread.join)
-    logging.info(f'⚙️ Found {len(tracked_levels)} levels')
+    msg = f'⚙️ Found {len(tracked_levels)} levels'
+
+    logging.info(msg)
+    personal_bot.send_message(personal_id, msg)
+
     # for lev in tracked_levels.keys():
     #     print(lev)
     await asyncio.sleep(60)
@@ -141,10 +152,9 @@ async def levels_threads(coins_list):
                 the_threads.append(thread)
             for thread in the_threads:
                 await asyncio.to_thread(thread.join)
-
-            logging.info(f'⚙️ Added {len(tracked_levels) - len(copy_levels)} levels, now tracked levels count: {len(tracked_levels)}')
-            # for lev in tracked_levels.keys():
-            #     print(lev)
+            msg = f'⚙️ Added {len(tracked_levels) - len(copy_levels)} levels, now tracked levels count: {len(tracked_levels)}'
+            logging.info(msg)
+            personal_bot.send_message(personal_id, msg)
 
         await asyncio.sleep(0.1)
 
