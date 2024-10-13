@@ -133,10 +133,7 @@ async def levels_threads(coins_list):
     msg = f'⚙️ Found {len(tracked_levels)} levels'
 
     logging.info(msg)
-    personal_bot.send_message(personal_id, msg)
-
-    # for lev in tracked_levels.keys():
-    #     print(lev)
+    # personal_bot.send_message(personal_id, msg)
     await asyncio.sleep(60)
 
     while not global_stop.is_set():
@@ -154,8 +151,7 @@ async def levels_threads(coins_list):
                 await asyncio.to_thread(thread.join)
             msg = f'⚙️ Added {len(tracked_levels) - len(copy_levels)} levels, now tracked levels count: {len(tracked_levels)}'
             logging.info(msg)
-            personal_bot.send_message(personal_id, msg)
-
+            # personal_bot.send_message(personal_id, msg)
         await asyncio.sleep(0.1)
 
     logging.info(f"⚙️ Levels asyncio done its work.")
