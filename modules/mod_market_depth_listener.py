@@ -76,8 +76,8 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                         if (symbol, h, m, level, 'top_volume_found_dn') not in sent_messages:
                             msg = (f'{symbol} ({market_type})\n'
                                    f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)}%)\n'
-                                   f'Avg volume: {avg_vol} ({int((abs(best_ask - max_volume_price) / (max_volume_price / 100)) / avg_vol)} times smaller than max)')
-                            personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
+                                   f'Avg volume: {avg_vol} ({round(max_volume_volume / avg_vol, 2)} times smaller than max)')
+                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
                             sent_messages.append((symbol, h, m, level, 'top_volume_found_dn'))
                     # else:
                     #     print(f'{symbol} level {level} {side} in {current_distance}%')
@@ -120,8 +120,8 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                         if (symbol, h, m, level, 'top_volume_found_up') not in sent_messages:
                             msg = (f'{symbol} ({market_type})\n'
                                    f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)}%)\n'
-                                   f'Avg volume: {avg_vol} ({int((abs(best_bid - max_volume_price) / (max_volume_price / 100)) / avg_vol)} times smaller than max)')
-                            personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
+                                   f'Avg volume: {avg_vol} ({round(max_volume_volume / avg_vol, 2)} times smaller than max)')
+                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
                             sent_messages.append((symbol, h, m, level, 'top_volume_found_up'))
                     # else:
                     #     print(f'{symbol} level {level} {side} in {current_distance}%')
