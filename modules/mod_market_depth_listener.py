@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from main_log_config import setup_logger
 from modules.mod_levels_search import tracked_levels, dropped_levels
 from modules.global_stopper import global_stop, sent_messages
+
 setup_logger()
 
 load_dotenv('keys.env')
@@ -46,41 +47,33 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                     potential_take = best_bid - abs(potential_stop - best_bid) - 0.001 * best_bid
 
                     level_in_ask = level in asks.keys()
-                    volume_verified = max_volume_volume >= avg_vol * avg_vol_mpl
+                    max_vol_ver = max_volume_volume >= avg_vol * avg_vol_mpl
                     relative_volume_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
-                    distance_verified = current_distance <= atr * atr_dis_mpl
-                    entry_position = round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2) <= best_price_dist
+                    lvl_dist_ver = current_distance <= atr * atr_dis_mpl
+                    max_dist_ver = round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2) <= best_price_dist
 
-                    msg = (f'{symbol} ({market_type}) SELL\n'
-                           f'Level in asks ({level}) -> {level_in_ask}\n'
-                           f'MaxVol/AvgVol: {int(max_volume_volume)}k >= {int(avg_vol)}k * {avg_vol_mpl} -> {volume_verified}\n'
-                           f'MaxVol/SecVol: {int(max_volume_volume)}k >= {int(second_volume_volume)}k * {sec_vol_mpl} -> {relative_volume_verified}\n'
-                           f'Dist to level: {current_distance}% <= {round(atr, 2)}% * {atr_dis_mpl} -> {distance_verified}\n'
-                           f'Dist to max.vol: {round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)}% <= {best_price_dist}% -> {entry_position}\n\n'
-                           f'Entry: {best_bid}\n'
-                           f'Stop: {potential_stop}\n'
-                           f'Take: {potential_take}')
+                    msg = (f'{symbol} ({market_type})\n'
+                           f'{"☑️" if level_in_ask else "◻️"} level_in_ask: {level}\n'
+                           f'{"☑️" if max_vol_ver else "◻️"} max_vol_ver: {int(max_volume_volume / 1000)}k ({round(max_volume_volume / avg_vol, 2)} x avg.vol)\n'
+                           f'{"☑️" if max_dist_ver else "◻️"} max_dist_ver: {round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)}% to max vol\n'
+                           f'{"☑️" if lvl_dist_ver else "◻️"} lvl_dist_ver: {current_distance}% to level')
 
-                    if level_in_ask and volume_verified and relative_volume_verified and distance_verified and entry_position:
-                        if ((symbol, h, level, 'sell')) not in sent_messages:
+                    if level_in_ask and max_vol_ver and lvl_dist_ver and max_dist_ver:
+                        if (symbol, h, level, 111) not in sent_messages:
                             personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                            sent_messages.append((symbol, h, level, 'sell'))
+                            sent_messages.append((symbol, h, level, 111))
                             print('✅ TRADE\n' + msg)
+                    elif max_vol_ver and max_dist_ver:
+                        if (symbol, h, m, level, 222) not in sent_messages:
+                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
+                            sent_messages.append((symbol, h, m, level, 222))
+                            print('✍ just volume\n' + msg)
                     elif level_in_ask:
-                        if (symbol, h, m, level, 'level_in_ask') not in sent_messages:
-                            # personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
-                            sent_messages.append((symbol, h, m, level, 'level_in_ask'))
+                        if (symbol, h, m, level, 333) not in sent_messages:
+                            personal_bot.send_message(personal_id, msg)
+                            sent_messages.append((symbol, h, m, level, 333))
                             print('NOT A TRADE\n' + msg)
 
-                    elif volume_verified and entry_position:
-                        if (symbol, h, m, level, 'top_volume_found_dn') not in sent_messages:
-                            msg = (f'{symbol} ({market_type})\n'
-                                   f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)}%)\n'
-                                   f'Avg volume: {avg_vol} ({round(max_volume_volume / avg_vol, 2)} times smaller than max)')
-                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
-                            sent_messages.append((symbol, h, m, level, 'top_volume_found_dn'))
-                    # else:
-                    #     print(f'{symbol} level {level} {side} in {current_distance}%')
             if side == 'dn':
                 if best_bid < level:
                     return key
@@ -91,45 +84,35 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                     potential_take = best_ask + abs(best_ask - potential_stop) + 0.001 * best_ask
 
                     level_in_bid = level in bids.keys()
-                    volume_verified = max_volume_volume >= avg_vol * avg_vol_mpl
+                    max_vol_ver = max_volume_volume >= avg_vol * avg_vol_mpl
                     relative_volume_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
-                    distance_verified = current_distance <= atr * atr_dis_mpl
-                    entry_position = round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2) <= best_price_dist
+                    lvl_dist_ver = current_distance <= atr * atr_dis_mpl
+                    max_dist_ver = round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2) <= best_price_dist
 
-                    msg = (f'{symbol} ({market_type}) BUY\n'
-                           f'Level in bids ({level}) -> {level_in_bid}\n'
-                           f'MaxVol/AvgVol: {int(max_volume_volume)}k >= {int(avg_vol)}k * {avg_vol_mpl} -> {volume_verified}\n'
-                           f'MaxVol/SecVol: {int(max_volume_volume)}k >= {int(second_volume_volume)}k * {sec_vol_mpl} -> {relative_volume_verified}\n'
-                           f'Dist to level: {current_distance}% <= {round(atr, 2)}% * {atr_dis_mpl} -> {distance_verified}\n'
-                           f'Dist to max.vol: {round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)}% <= {best_price_dist}% -> {entry_position}\n\n'
-                           f'Entry: {best_bid}\n'
-                           f'Stop: {potential_stop}\n'
-                           f'Take: {potential_take}')
+                    msg = (f'{symbol} ({market_type})\n'
+                           f'{"☑️" if level_in_bid else "◻️"} level_in_bid: {level}\n'
+                           f'{"☑️" if max_vol_ver else "◻️"} max_vol_ver: {int(max_volume_volume / 1000)}k ({round(max_volume_volume / avg_vol, 2)} x avg.vol)\n'
+                           f'{"☑️" if max_dist_ver else "◻️"} max_dist_ver: {round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)}% to max vol\n'
+                           f'{"☑️" if lvl_dist_ver else "◻️"} lvl_dist_ver: {current_distance}% to level')
 
-                    if level_in_bid and volume_verified and relative_volume_verified and distance_verified and entry_position:
-                        if ((symbol, h, level, 'buy')) not in sent_messages:
+                    if level_in_bid and max_vol_ver and lvl_dist_ver and max_dist_ver:
+                        if (symbol, h, level, 444) not in sent_messages:
                             personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                            sent_messages.append((symbol, h, level, 'buy'))
+                            sent_messages.append((symbol, h, level, 444))
                             print('✅ TRADE\n' + msg)
-                    elif level_in_bid:
-                        if (symbol, h, m, level, 'level_in_bid') not in sent_messages:
-                            # personal_bot.send_message(personal_id, 'NOT A TRADE\n' + msg)
-                            sent_messages.append((symbol, h, m, level, 'level_in_bid'))
-                            print('NOT A TRADE\n' + msg)
-                    elif volume_verified and entry_position:
-                        if (symbol, h, m, level, 'top_volume_found_up') not in sent_messages:
-                            msg = (f'{symbol} ({market_type})\n'
-                                   f'We close to max vol {max_volume_volume} ({max_volume_price} in {round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)}%)\n'
-                                   f'Avg volume: {avg_vol} ({round(max_volume_volume / avg_vol, 2)} times smaller than max)')
+                    elif max_vol_ver and max_dist_ver:
+                        if (symbol, h, m, level, 555) not in sent_messages:
                             personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
-                            sent_messages.append((symbol, h, m, level, 'top_volume_found_up'))
-                    # else:
-                    #     print(f'{symbol} level {level} {side} in {current_distance}%')
+                            sent_messages.append((symbol, h, m, level, 555))
+                            print('✍ just volume\n' + msg)
+                    elif level_in_bid:
+                        if (symbol, h, m, level, 666) not in sent_messages:
+                            personal_bot.send_message(personal_id, msg)
+                            sent_messages.append((symbol, h, m, level, 666))
+                            print('NOT A TRADE\n' + msg)
 
             if side not in ['up', 'dn']:
                 print('Wrong side! : ', side)
-
-
 
 
 async def connect_and_listen(stream_url):
