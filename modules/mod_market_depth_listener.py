@@ -65,7 +65,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                             print('✅ TRADE\n' + msg)
                     elif max_vol_ver and max_dist_ver:
                         if (symbol, h, m, level, 222) not in sent_messages:
-                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
+                            # personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
                             sent_messages.append((symbol, h, m, level, 222))
                             print('✍ just volume\n' + msg)
                     elif level_in_ask:
@@ -102,7 +102,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set) -> 
                             print('✅ TRADE\n' + msg)
                     elif max_vol_ver and max_dist_ver:
                         if (symbol, h, m, level, 555) not in sent_messages:
-                            personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
+                            # personal_bot.send_message(personal_id, '✍ just volume\n' + msg)
                             sent_messages.append((symbol, h, m, level, 555))
                             print('✍ just volume\n' + msg)
                     elif level_in_bid:
