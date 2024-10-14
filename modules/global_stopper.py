@@ -12,7 +12,7 @@ sent_messages = []
 async def stopper_setter():
     while True:  # Keep running in a loop
         h, m, s = datetime.now().strftime('%H'), datetime.now().strftime('%M'), datetime.now().strftime('%S')
-        if int(h) % 2 == 0 and int(m) == 0 and int(s) == 0 and not global_stop.is_set():
+        if int(h) == 16 and int(m) == 43 and int(s) == 0 and not global_stop.is_set():
             logging.info(f"⚙️ STOPPER SET!")
             global_stop.set()
             break  # Break out of the loop after setting the stopper
