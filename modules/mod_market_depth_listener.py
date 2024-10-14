@@ -94,7 +94,7 @@ async def connect_and_listen(stream_url):
             while not global_stop.is_set():
                 if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
                     os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
-                    print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tracked_levels)})')
+                    print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})')
 
                 # trying to get new data
                 try:
@@ -102,7 +102,8 @@ async def connect_and_listen(stream_url):
                     if global_stop.is_set():
                         break
                     response = json.loads(message)
-                    levels_symbols = set([s[0] for s in tracked_levels.keys()])
+                    tr_levels = tracked_levels.copy()
+                    levels_symbols = set([s[0] for s in tr_levels.keys()])
                     coin = response['stream'].split('@')[0].upper()
                     data = response['data']
 
@@ -111,7 +112,7 @@ async def connect_and_listen(stream_url):
                         m_type = 'spot'
                         bids, asks = data['bids'][::-1], data['asks']
                         bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
-                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tracked_levels):
+                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
                             dropped_levels.add(de)
                             logging.debug(f'Level added to dropped levels: {de}')
                     # futures
@@ -119,7 +120,7 @@ async def connect_and_listen(stream_url):
                         m_type = 'futures'
                         bids, asks = data['b'][::-1], data['a']
                         bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
-                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tracked_levels):
+                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
                             dropped_levels.add(de)
                             logging.debug(f'Level added to dropped levels: {de}')
 
