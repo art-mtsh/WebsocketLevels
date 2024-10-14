@@ -11,7 +11,6 @@ from main_log_config import setup_logger
 from modules.global_stopper import global_stop
 from modules.get_pairsV5 import split_list
 
-
 setup_logger()
 
 tracked_levels = {}
@@ -78,6 +77,7 @@ def lower_levels_check(c_low, i, w, complexity):
             if len(window) >= w and all(v >= check_list_min for v in window):
                 return check_list_min
 
+
 def levels_search(coins, complexity):
     for coin_data in coins:
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
@@ -119,15 +119,14 @@ def levels_search(coins, complexity):
                     if lower and (symbol, timeframe, 'futures', lower, lower, 'dn') not in tracked_levels.keys():
                         tracked_levels[(symbol, timeframe, 'futures', lower, lower, 'dn')] = minute_futures_avg_volume, x_atr_per
 
-
         time.sleep(5)  # every 6 seconds 10 threads do 3 requests with 3 weights, which is 900- weights per minute
 
 
 async def levels_threads(coins_list):
     complexity = 1 if len(coins_list) >= 50 else 2 if len(coins_list) >= 25 else 3
     logging.info(f"⚙️ Starting levels asyncio. Complexity: {complexity} ({len(coins_list)} coins)")
-
     coins_list = split_list(coins_list, 10)
+
     the_threads = []
     for coins in coins_list:
         thread = threading.Thread(target=levels_search, args=(coins, complexity,))
@@ -143,13 +142,13 @@ async def levels_threads(coins_list):
 
     while not global_stop.is_set():
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
-        if int(m) % 5 == 0 and int(s) == 59:
-            logging.info(f"⚙️ Refreshing levels.")
+        if int(m) % 5 == 0 and int(s) == 0:
+            logging.info(f"⚙️ Refreshing levels. Complexity: {complexity} ({len(coins_list)} coins)")
             copy_levels = tracked_levels.copy()
 
             the_threads = []
             for coins in coins_list:
-                thread = threading.Thread(target=levels_search, args=(coins,))
+                thread = threading.Thread(target=levels_search, args=(coins, complexity,))
                 thread.start()
                 the_threads.append(thread)
             for thread in the_threads:
