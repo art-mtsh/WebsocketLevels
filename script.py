@@ -26,6 +26,7 @@ async def monitor_time_and_control_threads():
         await levels_task
         await listener_task
 
+        logging.info('⚙️ All asyncs done their work! Cleaning levels...')
         async with tracked_levels_lock:
             dropped_levels.clear()
             tracked_levels.clear()

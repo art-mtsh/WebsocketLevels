@@ -97,17 +97,9 @@ def levels_search(coins):
                     upper = upper_levels_check(s_high, i, window)
                     lower = lower_levels_check(s_low, i, window)
                     if upper and futu_klines and (symbol, timeframe, 'spot', upper, max(futu_klines[2][-i: -1]), 'up') not in tracked_levels.keys():
-                        # distance_per = abs(upper - s_close[-1]) / (s_close[-1] / 100)
-                        # distance_per = float('{:.2f}'.format(distance_per))
-
-                        # print((symbol, timeframe, 'spot', upper, max(futu_klines[2][-i: -1]), 'up'), f'Initially in {distance_per}%')
                         tracked_levels[(symbol, timeframe, 'spot', upper, max(futu_klines[2][-i: -1]), 'up')] = minute_spot_avg_volume, x_atr_per
 
                     if lower and futu_klines and (symbol, timeframe, 'spot', lower, min(futu_klines[3][-i: -1]), 'dn') not in tracked_levels.keys():
-                        # distance_per = abs(lower - s_close[-1]) / (s_close[-1] / 100)
-                        # distance_per = float('{:.2f}'.format(distance_per))
-
-                        # print((symbol, timeframe, 'spot', lower, min(futu_klines[3][-i: -1]), 'dn'), f'Initially in {distance_per}%')
                         tracked_levels[(symbol, timeframe, 'spot', lower, min(futu_klines[3][-i: -1]), 'dn')] = minute_spot_avg_volume, x_atr_per
 
             if not futu_klines:
@@ -120,18 +112,11 @@ def levels_search(coins):
                     upper = upper_levels_check(f_high, i, window)
                     lower = lower_levels_check(f_low, i, window)
                     if upper and (symbol, timeframe, 'futures', upper, upper, 'up') not in tracked_levels.keys():
-                        # distance_per = abs(upper - f_close[-1]) / (f_close[-1] / 100)
-                        # distance_per = float('{:.2f}'.format(distance_per))
-
-                        # print((symbol, timeframe, 'futures', upper, upper, 'up'), f'Initially in {distance_per}%')
                         tracked_levels[(symbol, timeframe, 'futures', upper, upper, 'up')] = minute_futures_avg_volume, x_atr_per
 
                     if lower and (symbol, timeframe, 'futures', lower, lower, 'dn') not in tracked_levels.keys():
-                        # distance_per = abs(lower - f_close[-1]) / (f_close[-1] / 100)
-                        # distance_per = float('{:.2f}'.format(distance_per))
-
-                        # print((symbol, timeframe, 'futures', lower, lower, 'dn'), f'Initially in {distance_per}%')
                         tracked_levels[(symbol, timeframe, 'futures', lower, lower, 'dn')] = minute_futures_avg_volume, x_atr_per
+
 
         time.sleep(5)  # every 6 seconds 10 threads do 3 requests with 3 weights, which is 900- weights per minute
 
