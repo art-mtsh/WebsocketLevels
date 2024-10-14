@@ -44,6 +44,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
                     distance_to_max = round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)
 
                     max_vol_verified = max_volume_volume >= avg_vol * avg_vol_mpl
+                    sec_vol_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
                     max_vol_close_to_level = level >= max_volume_price >= level - level * ((atr * atr_dis_mpl) / 100)
                     price_dist_to_max = distance_to_max <= best_price_dist
 
@@ -52,7 +53,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
                            f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
                            f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
 
-                    if max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+                    if max_vol_verified and max_vol_close_to_level and price_dist_to_max and sec_vol_verified:
                         if (symbol, h, level, 111) not in sent_messages:
                             personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
                             sent_messages.append((symbol, h, level, 111))
@@ -67,6 +68,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
                     distance_to_max = round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)
 
                     max_vol_verified = max_volume_volume >= avg_vol * avg_vol_mpl
+                    sec_vol_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
                     max_vol_close_to_level = level <= max_volume_price <= level + level * ((atr * atr_dis_mpl) / 100)
                     price_dist_to_max = distance_to_max <= best_price_dist
 
@@ -75,7 +77,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
                            f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
                            f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
 
-                    if max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+                    if max_vol_verified and max_vol_close_to_level and price_dist_to_max and sec_vol_verified:
                         if (symbol, h, level, 444) not in sent_messages:
                             personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
                             sent_messages.append((symbol, h, level, 444))
