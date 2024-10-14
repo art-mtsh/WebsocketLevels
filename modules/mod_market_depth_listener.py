@@ -92,6 +92,8 @@ async def connect_and_listen(stream_url):
             logging.info(f"⚙️ Connected to the WebSocket {stream_url}")
 
             while not global_stop.is_set():
+                tr_levels = tracked_levels.copy()
+
                 if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
                     os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
                     print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})')
@@ -102,7 +104,6 @@ async def connect_and_listen(stream_url):
                     if global_stop.is_set():
                         break
                     response = json.loads(message)
-                    tr_levels = tracked_levels.copy()
                     levels_symbols = set([s[0] for s in tr_levels.keys()])
                     coin = response['stream'].split('@')[0].upper()
                     data = response['data']
