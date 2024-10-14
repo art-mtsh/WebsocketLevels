@@ -16,9 +16,8 @@ async def monitor_time_and_control_threads():
     while True:
         logging.info(f"⚙️ New loop is started.")
         pairs_lists = get_pairs()
-        levels_pairs = split_list(pairs_lists, 10)
 
-        levels_task = asyncio.create_task(levels_threads(levels_pairs))
+        levels_task = asyncio.create_task(levels_threads(pairs_lists))
         stopper_task = asyncio.create_task(stopper_setter())
         listener_task = asyncio.create_task(listen_market_depth(pairs_lists))
 

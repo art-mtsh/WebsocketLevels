@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from modules.get_pairsV5 import combined_klines
 from main_log_config import setup_logger
 from modules.global_stopper import global_stop
+from modules.get_pairsV5 import split_list
+
 
 setup_logger()
 
@@ -21,7 +23,7 @@ personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
 
 
-def upper_levels_check(c_high, i, w):
+def upper_levels_check(c_high, i, w, complexity):
     check_list = c_high[-i: -1]
     check_list_max = max(check_list)
     max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_max]
@@ -34,22 +36,22 @@ def upper_levels_check(c_high, i, w):
 
     wiggle_room = float(os.getenv('WIGGLE_ROOM_ONE', 0.04)) / 100
     max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
-    if len(max_indices) > 1:
+    if len(max_indices) > 1 and complexity > 1:
         for g in range(1, len(max_indices)):
             window = check_list[max_indices[g - 1] + 1:max_indices[g]]
             if len(window) >= w and all(v <= check_list_max for v in window):
                 return check_list_max
 
-    # wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
-    # max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
-    # if len(max_indices) > 2:
-    #     for g in range(1, len(max_indices)):
-    #         window = check_list[max_indices[g - 1] + 1:max_indices[g]]
-    #         if len(window) >= w and all(v <= check_list_max for v in window):
-    #             return check_list_max
+    wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
+    max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
+    if len(max_indices) > 2 and complexity > 2:
+        for g in range(1, len(max_indices)):
+            window = check_list[max_indices[g - 1] + 1:max_indices[g]]
+            if len(window) >= w and all(v <= check_list_max for v in window):
+                return check_list_max
 
 
-def lower_levels_check(c_low, i, w):
+def lower_levels_check(c_low, i, w, complexity):
     check_list = c_low[-i: -1]
     check_list_min = min(check_list)
     min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_min]
@@ -62,21 +64,21 @@ def lower_levels_check(c_low, i, w):
 
     wiggle_room = float(os.getenv('WIGGLE_ROOM_ONE', 0.04)) / 100
     min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
-    if len(min_indices) > 1:
+    if len(min_indices) > 1 and complexity > 1:
         for g in range(1, len(min_indices)):
             window = check_list[min_indices[g - 1] + 1:min_indices[g]]
             if len(window) >= w and all(v >= check_list_min for v in window):
                 return check_list_min
 
-    # wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
-    # min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
-    # if len(min_indices) > 2:
-    #     for g in range(1, len(min_indices)):
-    #         window = check_list[min_indices[g - 1] + 1:min_indices[g]]
-    #         if len(window) >= w and all(v >= check_list_min for v in window):
-    #             return check_list_min
+    wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
+    min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
+    if len(min_indices) > 2 and complexity > 2:
+        for g in range(1, len(min_indices)):
+            window = check_list[min_indices[g - 1] + 1:min_indices[g]]
+            if len(window) >= w and all(v >= check_list_min for v in window):
+                return check_list_min
 
-def levels_search(coins):
+def levels_search(coins, complexity):
     for coin_data in coins:
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
 
@@ -94,8 +96,8 @@ def levels_search(coins):
                 if timeframe == '1m':
                     minute_spot_avg_volume = int(avg_vol)
                 for i in range(c_room, len(s_high)):
-                    upper = upper_levels_check(s_high, i, window)
-                    lower = lower_levels_check(s_low, i, window)
+                    upper = upper_levels_check(s_high, i, window, complexity)
+                    lower = lower_levels_check(s_low, i, window, complexity)
                     if upper and futu_klines and (symbol, timeframe, 'spot', upper, max(futu_klines[2][-i: -1]), 'up') not in tracked_levels.keys():
                         tracked_levels[(symbol, timeframe, 'spot', upper, max(futu_klines[2][-i: -1]), 'up')] = minute_spot_avg_volume, x_atr_per
 
@@ -109,8 +111,8 @@ def levels_search(coins):
                 if timeframe == '1m':
                     minute_futures_avg_volume = int(avg_vol)
                 for i in range(c_room, len(f_high)):
-                    upper = upper_levels_check(f_high, i, window)
-                    lower = lower_levels_check(f_low, i, window)
+                    upper = upper_levels_check(f_high, i, window, complexity)
+                    lower = lower_levels_check(f_low, i, window, complexity)
                     if upper and (symbol, timeframe, 'futures', upper, upper, 'up') not in tracked_levels.keys():
                         tracked_levels[(symbol, timeframe, 'futures', upper, upper, 'up')] = minute_futures_avg_volume, x_atr_per
 
@@ -122,10 +124,13 @@ def levels_search(coins):
 
 
 async def levels_threads(coins_list):
-    logging.info(f"⚙️ Starting levels asyncio.")
+    complexity = 1 if len(coins_list) >= 50 else 2 if len(coins_list) >= 25 else 3
+    logging.info(f"⚙️ Starting levels asyncio. Complexity: {complexity} ({len(coins_list)} coins)")
+
+    coins_list = split_list(coins_list, 10)
     the_threads = []
     for coins in coins_list:
-        thread = threading.Thread(target=levels_search, args=(coins,))
+        thread = threading.Thread(target=levels_search, args=(coins, complexity,))
         thread.start()
         the_threads.append(thread)
     for thread in the_threads:
