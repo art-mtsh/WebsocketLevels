@@ -22,8 +22,7 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
     best_ask: float = list(bids.keys())[0]
 
     for key, value in tracked.items():
-        symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[
-            2], key[3], key[4], key[5], value[0], value[1]
+        symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[2], key[3], key[4], key[5], value[0], value[1]
         level = origin_level if market_type == 'spot' else futures_according_level
         current_distance = abs(level - (best_ask + best_bid) / 2) / (level / 100)
         current_distance = round(current_distance, 2)
