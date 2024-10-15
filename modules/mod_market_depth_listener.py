@@ -1,6 +1,8 @@
 import os
 import asyncio
 import json
+from time import sleep
+
 import websockets
 import logging
 import telebot
@@ -128,6 +130,7 @@ async def connect_and_listen(stream_url):
 
                 except websockets.exceptions.ConnectionClosed:
                     personal_bot.send_message(personal_id, "Connection closed.")
+                    await asyncio.sleep(10)
                     break  # Break the inner loop to reconnect
 
     except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
@@ -148,8 +151,7 @@ async def listen_market_depth(symbols_with_levels):
             spot_channels.append(f"{symbol.lower()}@depth20")
 
     spot_url = f'wss://stream.binance.com:9443/stream?streams=' + '/'.join(spot_channels) if spot_channels else None
-    futures_url = f'wss://fstream.binance.com/stream?streams=' + '/'.join(
-        futures_channels) if futures_channels else None
+    futures_url = f'wss://fstream.binance.com/stream?streams=' + '/'.join(futures_channels) if futures_channels else None
 
     tasks = []
     if spot_url:
@@ -158,10 +160,6 @@ async def listen_market_depth(symbols_with_levels):
         tasks.append(asyncio.create_task(connect_and_listen(futures_url)))
 
     for task in tasks:
-        await task
-
-    for task in tasks:
-        task.cancel()
         await task
 
     logging.info(f"⚙️ Websockets asyncio done its work.")
