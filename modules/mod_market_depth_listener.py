@@ -99,7 +99,8 @@ async def connect_and_listen(stream_url):
 
                 if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
                     os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
-                    print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})')
+                    print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})\n'
+                          f'ws: {stream_url}')
 
                 # trying to get new data
                 try:
