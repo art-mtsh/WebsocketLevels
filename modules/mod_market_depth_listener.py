@@ -94,6 +94,7 @@ async def connect_and_listen(stream_url):
         try:
             async with websockets.connect(stream_url) as websocket:
                 logging.info(f"⚙️ Connected to the WebSocket {stream_url}")
+                personal_bot.send_message(personal_id, "Connected to the WebSocket...")
 
                 while not global_stop.is_set():
                     tr_levels = tracked_levels.copy()
