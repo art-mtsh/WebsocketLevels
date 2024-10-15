@@ -89,54 +89,55 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
 
 
 async def connect_and_listen(stream_url):
-    # trying to connect to websocket
-    try:
-        async with websockets.connect(stream_url) as websocket:
-            logging.info(f"⚙️ Connected to the WebSocket {stream_url}")
+    while not global_stop.is_set():
+        # trying to connect to websocket
+        try:
+            async with websockets.connect(stream_url) as websocket:
+                logging.info(f"⚙️ Connected to the WebSocket {stream_url}")
 
-            while not global_stop.is_set():
-                tr_levels = tracked_levels.copy()
+                while not global_stop.is_set():
+                    tr_levels = tracked_levels.copy()
 
-                if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
-                    os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
-                    print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})\n'
-                          f'ws: {stream_url}')
+                    if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
+                        os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
+                        print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})\n'
+                              f'ws: {stream_url}')
 
-                # trying to get new data
-                try:
-                    message = await websocket.recv()
-                    if global_stop.is_set():
-                        break
-                    response = json.loads(message)
-                    levels_symbols = set([s[0] for s in tr_levels.keys()])
-                    coin = response['stream'].split('@')[0].upper()
-                    data = response['data']
+                    # trying to get new data
+                    try:
+                        message = await websocket.recv()
+                        if global_stop.is_set():
+                            break
+                        response = json.loads(message)
+                        levels_symbols = set([s[0] for s in tr_levels.keys()])
+                        coin = response['stream'].split('@')[0].upper()
+                        data = response['data']
 
-                    # spot
-                    if 'bids' in data.keys() and coin in levels_symbols:
-                        m_type = 'spot'
-                        bids, asks = data['bids'][::-1], data['asks']
-                        bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
-                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
-                            dropped_levels.add(de)
-                            logging.debug(f'Level added to dropped levels: {de}')
-                    # futures
-                    elif 'b' in data.keys() and coin in levels_symbols:
-                        m_type = 'futures'
-                        bids, asks = data['b'][::-1], data['a']
-                        bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
-                        if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
-                            dropped_levels.add(de)
-                            logging.debug(f'Level added to dropped levels: {de}')
+                        # spot
+                        if 'bids' in data.keys() and coin in levels_symbols:
+                            m_type = 'spot'
+                            bids, asks = data['bids'][::-1], data['asks']
+                            bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
+                            if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
+                                dropped_levels.add(de)
+                                logging.debug(f'Level added to dropped levels: {de}')
+                        # futures
+                        elif 'b' in data.keys() and coin in levels_symbols:
+                            m_type = 'futures'
+                            bids, asks = data['b'][::-1], data['a']
+                            bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
+                            if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
+                                dropped_levels.add(de)
+                                logging.debug(f'Level added to dropped levels: {de}')
 
-                except websockets.exceptions.ConnectionClosed:
-                    personal_bot.send_message(personal_id, "Connection closed.")
-                    await asyncio.sleep(10)
-                    break  # Break the inner loop to reconnect
+                    except websockets.exceptions.ConnectionClosed:
+                        personal_bot.send_message(personal_id, "Connection closed.")
+                        await asyncio.sleep(10)
+                        break  # Break the inner loop to reconnect
 
-    except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
-        personal_bot.send_message(personal_id, f"Connection error: {e}. Script is stopped")
-        exit()
+        except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
+            personal_bot.send_message(personal_id, f"Connection error: {e}. Script is stopped")
+            await asyncio.sleep(10)  # Wait before retrying
 
 
 async def listen_market_depth(symbols_with_levels):
