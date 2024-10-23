@@ -146,7 +146,6 @@ async def levels_threads(coins_top_list):
     await asyncio.sleep(60)
 
     while not global_stop.is_set():
-        tr_init = tracked_levels.copy()
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
         if int(m) % 5 == 0 and int(s) == 0:
             the_threads = []
