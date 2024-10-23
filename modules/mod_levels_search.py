@@ -23,7 +23,6 @@ personal_id = int(os.getenv('PERSONAL_ID'))
 
 
 def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
-
     check_list = c_high[-i: -1]
     check_list_max = max(check_list)
     distance_validated = abs(check_list_max - c_close) / (c_close / 100) <= x_atr_per * 5
@@ -55,7 +54,6 @@ def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
 
 
 def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
-
     check_list = c_low[-i: -1]
     check_list_min = min(check_list)
     distance_validated = abs(check_list_min - c_close) / (c_close / 100) <= x_atr_per * 5
@@ -86,7 +84,7 @@ def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
                     return check_list_min
 
 
-def levels_search(coins):
+def levels_search(coins, wait_time):
     for coin_data in coins:
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
 
@@ -130,31 +128,47 @@ def levels_search(coins):
                             if not any(key[3] == lower for key in tracked_levels):
                                 tracked_levels[(symbol, timeframe, "futures", lower, lower, "dn")] = minute_futures_avg_volume, x_atr_per
 
-        time.sleep(5)  # every 6 seconds 10 threads do 3 requests with 3 weights, which is 900- weights per minute
+        time.sleep(wait_time)
+
+
+levels_lock = asyncio.Lock()
 
 
 async def levels_threads(coins_top_list):
+
     coins_list = split_list(coins_top_list, 10)
+    request_weight = len(coins_top_list) * 9
+    wait_time = 1 if request_weight <= 1100 else 5
 
     the_threads = []
     for coins in coins_list:
-        thread = threading.Thread(target=levels_search, args=(coins,))
+        thread = threading.Thread(target=levels_search, args=(coins, wait_time,))
         thread.start()
         the_threads.append(thread)
     for thread in the_threads:
         await asyncio.to_thread(thread.join)
+
     await asyncio.sleep(60)
 
     while not global_stop.is_set():
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
         if int(m) % 5 == 0 and int(s) == 0:
+
+            async with levels_lock:
+                tracked_levels.clear()
+                dropped_levels.clear()
+            print('Levels are cleared.')
+
             the_threads = []
             for coins in coins_list:
-                thread = threading.Thread(target=levels_search, args=(coins,))
+                thread = threading.Thread(target=levels_search, args=(coins, wait_time,))
                 thread.start()
                 the_threads.append(thread)
             for thread in the_threads:
                 await asyncio.to_thread(thread.join)
+
+            await asyncio.sleep(60)
+
         await asyncio.sleep(0.1)
 
-    print(f"⚙️ Levels asyncio done its work.")
+    print(f"Levels asyncio done its work.")

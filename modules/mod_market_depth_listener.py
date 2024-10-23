@@ -18,7 +18,7 @@ bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
 personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
 
-tracked_levels_lock = asyncio.Lock()
+levels_lock = asyncio.Lock()
 
 
 def process_depth(coin, market_type, bids: dict, asks: dict, level, side, avg_vol, atr) -> tuple or None:
@@ -93,18 +93,14 @@ async def connect_and_listen(stream_url):
 
                 while not global_stop.is_set():
 
-                    async with tracked_levels_lock:
+                    async with levels_lock:
                         init_tracked_levels = tracked_levels.copy()
-                        tr_levels = {}
-                        if init_tracked_levels:
-                            for key in init_tracked_levels.keys():
-                                if key not in dropped_levels:
-                                    tr_levels[key] = init_tracked_levels[key]
+                        init_dropped_levels = dropped_levels.copy()
 
                     t = datetime.now().strftime('%H:%M')
                     if os.getenv(f'levels_check') != t:
                         os.environ[f'levels_check'] = t
-                        print(f'{t} Initially tracked levels: {len(init_tracked_levels)}, Dropped: {len(dropped_levels)}, Tracked by WS: {len(tr_levels)}')
+                        print(f'{t} Dropped: {len(init_dropped_levels)}, Tracked by WS: {len(init_tracked_levels)}')
 
                     try:
                         message = await websocket.recv()
@@ -115,7 +111,7 @@ async def connect_and_listen(stream_url):
                         coin = response['stream'].split('@')[0].upper()
                         data = response['data']
 
-                        if any(key[0] == coin for key in tr_levels):
+                        if any(key[0] == coin for key in init_tracked_levels):
                             if 'bids' in data.keys():
                                 m_type = 'spot'
                                 bids, asks = data['bids'][::-1], data['asks']
@@ -127,10 +123,10 @@ async def connect_and_listen(stream_url):
                             else:
                                 personal_bot.send_message(personal_id, f"Broken data returned for {coin}.")
 
-                            for key, value in tr_levels.items():
+                            for key, value in init_tracked_levels.items():
                                 symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[2], key[3], key[4], key[5], value[0], value[1]
 
-                                if market_type == m_type and coin == symbol and key not in dropped_levels:
+                                if market_type == m_type and coin == symbol and key not in init_dropped_levels:
 
                                     if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
                                         dropped_levels.add(key)
@@ -170,4 +166,4 @@ async def listen_market_depth(symbols_with_levels):
     for task in tasks:
         await task
 
-    print(f"⚙️ Websockets asyncio done its work.")
+    print(f"Websockets asyncio done its work.")

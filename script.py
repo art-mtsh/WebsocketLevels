@@ -15,7 +15,7 @@ bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
 personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
 
-tracked_levels_lock = asyncio.Lock()
+levels_lock = asyncio.Lock()
 semaphore = asyncio.Semaphore(5)
 
 async def limited_task(task, *args):
@@ -36,7 +36,7 @@ async def monitor_time_and_control_threads():
         await listener_task
 
         print('All asyncs done their work! Cleaning levels...')
-        async with tracked_levels_lock:
+        async with levels_lock:
             dropped_levels.clear()
             tracked_levels.clear()
             global_stop.clear()
