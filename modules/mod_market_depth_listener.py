@@ -96,9 +96,11 @@ async def connect_and_listen(stream_url):
                     async with tracked_levels_lock:
                         tr_levels = tracked_levels.copy()
 
-                    if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
-                        os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
-                        print(f'Dropped levels: ({len(dropped_levels)}), Tracked levels: ({len(tr_levels)})')
+                    t = datetime.now().strftime('%H:%M')
+
+                    if os.getenv(f'levels_check') != t:
+                        os.environ[f'levels_check'] = t
+                        print(f'{t} D: {len(dropped_levels)}, T: {len(tr_levels)}')
 
                     # trying to get new data
                     try:
@@ -120,7 +122,7 @@ async def connect_and_listen(stream_url):
                                 bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                                 if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
                                     dropped_levels.add(key)
-                                    personal_bot.send_message(personal_id, f'Level added to dropped levels: {key}')
+                                    print(f'Level added to dropped levels: {key}')
 
                             # futures
                             elif 'b' in data.keys() and market_type == 'futures' and coin == symbol and key not in dropped_levels:
@@ -128,7 +130,7 @@ async def connect_and_listen(stream_url):
                                 bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                                 if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
                                     dropped_levels.add(key)
-                                    personal_bot.send_message(personal_id, f'Level added to dropped levels: {key}')
+                                    print(f'Level added to dropped levels: {key}')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
