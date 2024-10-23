@@ -1,12 +1,13 @@
 import os
 import requests
 import telebot
-import logging
 from dotenv import load_dotenv
 from threading import Thread
-from main_log_config import setup_logger
 
-setup_logger()
+# import logging
+# from main_log_config import setup_logger
+# setup_logger()
+
 load_dotenv('keys.env')
 
 bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
@@ -47,8 +48,7 @@ def calculate_pairs(pairs_dict, shared_results):
 
         except Exception as e:
             personal_message = f"⛔️ Error in downloading klines (get_pairs) for {symbol}: {e} {futures_klines}"
-            logging.error(personal_message)
-            # personal_bot.send_message(personal_id, personal_message)
+            personal_bot.send_message(personal_id, personal_message)
         # time.sleep(0)  # Throttle API requests to avoid overloading the system
 
 
@@ -84,7 +84,7 @@ def split_dict(input_dict: dict, num_parts: int):
 
 
 def get_pairs():
-    logging.info(f"⚙️ Searching for pairs.")
+    personal_bot.send_message(personal_id, f"⚙️ Searching for pairs.")
 
     ts_dict = {}
 
@@ -131,7 +131,6 @@ def get_pairs():
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
     msg = f"⚙️ Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
-    logging.info(msg)
     personal_bot.send_message(personal_id, msg)
 
     return result

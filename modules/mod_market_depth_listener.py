@@ -1,23 +1,25 @@
 import os
 import asyncio
 import json
-from time import sleep
-
 import websockets
-import logging
 import telebot
 from datetime import datetime
 from dotenv import load_dotenv
-from main_log_config import setup_logger
 from modules.mod_levels_search import tracked_levels, dropped_levels
 from modules.global_stopper import global_stop, sent_messages
 
-setup_logger()
+# import logging
+# from main_log_config import setup_logger
+# setup_logger()
+
 load_dotenv('keys.env')
 
 bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
 personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
+
+tracked_levels_lock = asyncio.Lock()
+
 
 def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tracked) -> tuple or None:
     best_bid: float = list(bids.keys())[-1]
@@ -26,8 +28,8 @@ def process_depth(m_type, coin, bids: dict, asks: dict, dropped_levels: set, tra
     for key, value in tracked.items():
         symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[2], key[3], key[4], key[5], value[0], value[1]
         level = origin_level if market_type == 'spot' else futures_according_level
-        current_distance = abs(level - (best_ask + best_bid) / 2) / (level / 100)
-        current_distance = round(current_distance, 2)
+        # current_distance = abs(level - (best_ask + best_bid) / 2) / (level / 100)
+        # current_distance = round(current_distance, 2)
         h, m = datetime.now().strftime('%H'), datetime.now().strftime('%M')
 
         if symbol == coin and market_type == m_type and key not in dropped_levels:
@@ -93,11 +95,12 @@ async def connect_and_listen(stream_url):
         # trying to connect to websocket
         try:
             async with websockets.connect(stream_url) as websocket:
-                logging.info(f"⚙️ Connected to the WebSocket {stream_url}")
                 personal_bot.send_message(personal_id, "Connected to the WebSocket...")
 
                 while not global_stop.is_set():
-                    tr_levels = tracked_levels.copy()
+
+                    async with tracked_levels_lock:
+                        tr_levels = tracked_levels.copy()
 
                     if os.getenv(f'levels_check') != datetime.now().strftime('%M%S'):
                         os.environ[f'levels_check'] = datetime.now().strftime('%M%S')
@@ -109,6 +112,7 @@ async def connect_and_listen(stream_url):
                         if global_stop.is_set():
                             break
                         response = json.loads(message)
+
                         levels_symbols = set([s[0] for s in tr_levels.keys()])
                         coin = response['stream'].split('@')[0].upper()
                         data = response['data']
@@ -120,7 +124,8 @@ async def connect_and_listen(stream_url):
                             bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                             if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
                                 dropped_levels.add(de)
-                                logging.debug(f'Level added to dropped levels: {de}')
+                                # personal_bot.send_message(personal_id, f'Level added to dropped levels: {de}')
+
                         # futures
                         elif 'b' in data.keys() and coin in levels_symbols:
                             m_type = 'futures'
@@ -128,7 +133,7 @@ async def connect_and_listen(stream_url):
                             bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                             if de := process_depth(m_type, coin, bids, asks, dropped_levels, tr_levels):
                                 dropped_levels.add(de)
-                                logging.debug(f'Level added to dropped levels: {de}')
+                                # personal_bot.send_message(personal_id, f'Level added to dropped levels: {de}')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
@@ -141,7 +146,7 @@ async def connect_and_listen(stream_url):
 
 
 async def listen_market_depth(symbols_with_levels):
-    logging.info(f"⚙️ Starting websockets asyncio.")
+    # personal_bot.send_message(personal_id, f"⚙️ Starting websockets asyncio.")
 
     spot_channels = []
     futures_channels = []
@@ -164,4 +169,4 @@ async def listen_market_depth(symbols_with_levels):
     for task in tasks:
         await task
 
-    logging.info(f"⚙️ Websockets asyncio done its work.")
+    personal_bot.send_message(personal_id, f"⚙️ Websockets asyncio done its work.")

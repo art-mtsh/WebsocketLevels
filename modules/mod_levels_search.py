@@ -1,17 +1,17 @@
 import os
 import threading
-import logging
 import asyncio
 import time
 import telebot
 from datetime import datetime
 from dotenv import load_dotenv
 from modules.get_pairsV5 import combined_klines
-from main_log_config import setup_logger
 from modules.global_stopper import global_stop
 from modules.get_pairsV5 import split_list
 
-setup_logger()
+# import logging
+# from main_log_config import setup_logger
+# setup_logger()
 
 tracked_levels = {}
 dropped_levels = set()
@@ -105,7 +105,8 @@ def levels_search(coins, complexity):
                         tracked_levels[(symbol, timeframe, 'spot', lower, min(futu_klines[3][-i: -1]), 'dn')] = minute_spot_avg_volume, x_atr_per
 
             if not futu_klines:
-                logging.error(f"⛔️ Main file. Error in {symbol} futures klines data!")
+                personal_bot.send_message(personal_id, f"⛔️ Main file. Error in {symbol} futures klines data!")
+
             else:
                 f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
                 if timeframe == '1m':
@@ -124,7 +125,7 @@ def levels_search(coins, complexity):
 
 async def levels_threads(coins_list):
     complexity = 1 if len(coins_list) >= 50 else 2 if len(coins_list) >= 25 else 3
-    logging.info(f"⚙️ Starting levels asyncio. Complexity: {complexity} ({len(coins_list)} coins)")
+    # personal_bot.send_message(personal_id, f"⚙️ Starting levels asyncio. Complexity: {complexity} ({len(coins_list)} coins)")
     coins_list = split_list(coins_list, 10)
 
     the_threads = []
@@ -136,14 +137,13 @@ async def levels_threads(coins_list):
         await asyncio.to_thread(thread.join)
     msg = f'⚙️ Found {len(tracked_levels)} levels'
 
-    logging.info(msg)
     # personal_bot.send_message(personal_id, msg)
     await asyncio.sleep(60)
 
     while not global_stop.is_set():
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
         if int(m) % 5 == 0 and int(s) == 0:
-            logging.info(f"⚙️ Refreshing levels. Complexity: {complexity} ({len(coins_list)} coins)")
+            # personal_bot.send_message(personal_id, f"⚙️ Refreshing levels. Complexity: {complexity} ({len(coins_list)} coins)")
             copy_levels = tracked_levels.copy()
 
             the_threads = []
@@ -154,8 +154,7 @@ async def levels_threads(coins_list):
             for thread in the_threads:
                 await asyncio.to_thread(thread.join)
             msg = f'⚙️ Added {len(tracked_levels) - len(copy_levels)} levels, now tracked levels count: {len(tracked_levels)}'
-            logging.info(msg)
             # personal_bot.send_message(personal_id, msg)
         await asyncio.sleep(0.1)
 
-    logging.info(f"⚙️ Levels asyncio done its work.")
+    personal_bot.send_message(personal_id, f"⚙️ Levels asyncio done its work.")
