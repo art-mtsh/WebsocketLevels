@@ -125,7 +125,7 @@ def levels_search(coins, complexity):
 
 
 async def levels_threads(coins_list):
-    complexity = 1 if len(coins_list) >= 40 else 2 if len(coins_list) >= 20 else 3
+    complexity = 1 if len(coins_list) >= 60 else 2 if len(coins_list) >= 30 else 3
     # personal_bot.send_message(personal_id, f"⚙️ Starting levels asyncio. Complexity: {complexity} ({len(coins_list)} coins)")
     coins_list = split_list(coins_list, 10)
 
