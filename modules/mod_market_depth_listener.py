@@ -112,14 +112,13 @@ async def connect_and_listen(stream_url):
                         coin = response['stream'].split('@')[0].upper()
                         data = response['data']
 
-                        if any(key[0] == coin for key in tracked_levels):
-
-                            # spot
-                            if 'bids' in data.keys() and market_type == 'spot' and coin == symbol and key not in dropped_levels:
+                        if any(key[0] == coin for key in tr_levels):
+                            if 'bids' in data.keys():
+                                m_type = 'spot'
                                 bids, asks = data['bids'][::-1], data['asks']
                                 bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
-                            # futures
-                            elif 'b' in data.keys() and market_type == 'futures' and coin == symbol and key not in dropped_levels:
+                            elif 'b' in data.keys():
+                                m_type = 'futures'
                                 bids, asks = data['b'][::-1], data['a']
                                 bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                             else:
@@ -128,9 +127,11 @@ async def connect_and_listen(stream_url):
                             for key, value in tr_levels.items():
                                 symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[2], key[3], key[4], key[5], value[0], value[1]
 
-                                if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
-                                    dropped_levels.add(key)
-                                    print(f'Level added to dropped levels: {key}')
+                                if market_type == m_type and coin == symbol and key not in dropped_levels:
+
+                                    if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
+                                        dropped_levels.add(key)
+                                        print(f'Level added to dropped levels: {key}')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
