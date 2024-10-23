@@ -85,7 +85,7 @@ def levels_search(coins, complexity):
         minute_spot_avg_volume = 0.0
         minute_futures_avg_volume = 0.0
         c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
-        frames = {'1m': 5, '5m': 1, '15m': 1}
+        frames = {'1m': 5, '5m': 1}
 
         for timeframe, window in frames.items():
             spot_klines = combined_klines(symbol, timeframe, 99, 'spot') if ts_percent_spot != 0 else None
@@ -120,7 +120,8 @@ def levels_search(coins, complexity):
                     if lower and (symbol, timeframe, 'futures', lower, lower, 'dn') not in tracked_levels.keys():
                         tracked_levels[(symbol, timeframe, 'futures', lower, lower, 'dn')] = minute_futures_avg_volume, x_atr_per
 
-        time.sleep(5)  # every 6 seconds 10 threads do 3 requests with 3 weights, which is 900- weights per minute
+        # time.sleep(5)  # every 6 seconds 10 threads do 3 requests with 3 weights, which is 900- weights per minute
+        time.sleep(4)  # every 6 seconds 10 threads do 2 requests with 3 weights, which is 900- weights per minute
 
 
 async def levels_threads(coins_list):
