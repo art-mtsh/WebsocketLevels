@@ -94,15 +94,18 @@ async def connect_and_listen(stream_url):
                 while not global_stop.is_set():
 
                     async with tracked_levels_lock:
-                        tr_levels = tracked_levels.copy()
+                        init_tracked_levels = tracked_levels.copy()
+                        tr_levels = {}
+                        if init_tracked_levels:
+                            for key in init_tracked_levels.keys():
+                                if key not in dropped_levels:
+                                    tr_levels[key] = init_tracked_levels[key]
 
                     t = datetime.now().strftime('%H:%M')
-
                     if os.getenv(f'levels_check') != t:
                         os.environ[f'levels_check'] = t
-                        print(f'{t} Dropped: {len(dropped_levels)}, Tracked: {len(tr_levels)}')
+                        print(f'{t} Initially tracked levels: {len(init_tracked_levels)}, Dropped: {len(dropped_levels)}, Tracked by WS: {len(tr_levels)}')
 
-                    # trying to get new data
                     try:
                         message = await websocket.recv()
                         if global_stop.is_set():
@@ -144,7 +147,7 @@ async def connect_and_listen(stream_url):
 
 
 async def listen_market_depth(symbols_with_levels):
-    # personal_bot.send_message(personal_id, f"⚙️ Starting websockets asyncio.")
+    print(f"Starting websockets asyncio.")
 
     spot_channels = []
     futures_channels = []
@@ -167,4 +170,4 @@ async def listen_market_depth(symbols_with_levels):
     for task in tasks:
         await task
 
-    personal_bot.send_message(personal_id, f"⚙️ Websockets asyncio done its work.")
+    print(f"⚙️ Websockets asyncio done its work.")

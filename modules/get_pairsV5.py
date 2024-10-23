@@ -84,7 +84,7 @@ def split_dict(input_dict: dict, num_parts: int):
 
 
 def get_pairs():
-    personal_bot.send_message(personal_id, f"⚙️ Searching for pairs.")
+    print(f"Searching for pairs.")
 
     ts_dict = {}
 
@@ -130,7 +130,7 @@ def get_pairs():
     result = [res for res in shared_results]
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
-    msg = f"⚙️ Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
+    msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
     personal_bot.send_message(personal_id, msg)
 
     return result
@@ -182,6 +182,7 @@ def combined_klines(symbol, frame, request_limit_length, market_type: str):
         msg = f"⛔️ {symbol} ({market_type}) LIMITS REACHED !!!! 429 CODE !!!!"
         # personal_bot.send_message(personal_id, msg)
         print(msg)
+        exit()
 
     else:
         msg = (f"⛔️ No klines data for {symbol} ({market_type}), status code {response.status_code}\n"

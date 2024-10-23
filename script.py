@@ -24,7 +24,7 @@ async def limited_task(task, *args):
 
 async def monitor_time_and_control_threads():
     while True:
-        personal_bot.send_message(personal_id, f"⚙️ New loop is started.")
+        print(f"New loop is started.")
         pairs_lists = get_pairs()
 
         levels_task = asyncio.create_task(limited_task(levels_threads, pairs_lists))
@@ -35,7 +35,7 @@ async def monitor_time_and_control_threads():
         await levels_task
         await listener_task
 
-        personal_bot.send_message(personal_id, '⚙️ All asyncs done their work! Cleaning levels...')
+        print('All asyncs done their work! Cleaning levels...')
         async with tracked_levels_lock:
             dropped_levels.clear()
             tracked_levels.clear()
