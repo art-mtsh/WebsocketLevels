@@ -23,14 +23,16 @@ levels_lock = asyncio.Lock()
 
 def process_depth(coin, market_type, bids: dict, asks: dict, level, side, avg_vol, atr) -> tuple or None:
     best_bid: float = list(bids.keys())[-1]
-    best_ask: float = list(bids.keys())[0]
+    best_bid_value = list(bids.values())[-1]
+    best_ask: float = list(asks.keys())[0]
+    best_ask_value = list(asks.values())[0]
 
     h, m = datetime.now().strftime('%H'), datetime.now().strftime('%M')
 
-    avg_vol_mpl = float(os.getenv('AVG_VOL_MPL'))
-    sec_vol_mpl = float(os.getenv('SEC_VOL_MPL'))
-    atr_dis_mpl = float(os.getenv('ATR_DIS_MPL'))
-    best_price_dist = float(os.getenv('BEST_PRICE_DIST'))
+    avg_vol_mpl = float(os.getenv('AVG_VOL_MPL', 4))
+    sec_vol_mpl = float(os.getenv('SEC_VOL_MPL', 1.5))
+    atr_dis_mpl = float(os.getenv('ATR_DIS_MPL', 0.5))
+    best_price_dist = float(os.getenv('BEST_PRICE_DIST', 0.1))
 
     if side == 'up':
         if best_ask > level:
@@ -55,6 +57,19 @@ def process_depth(coin, market_type, bids: dict, asks: dict, level, side, avg_vo
                     personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
                     sent_messages.append((coin, h, level, 111))
                     print('✅ TRADE\n' + msg)
+                    return None
+
+            best_ask_biggest = best_ask_value >= avg_vol * avg_vol_mpl
+            best_ask_biggest_close_to_level =  level >= best_ask >= level - level * ((atr * atr_dis_mpl) / 100)
+            if best_ask_biggest_close_to_level and best_ask_biggest:
+                msg = (f'{coin} ({market_type})\n'
+                       f'Best ASK is {best_ask_value} = {round(best_ask_value / avg_vol, 2)} x avg.vol\n'
+                       f'Best ASK is close to level: {level}')
+                if (coin, h, level, 222) not in sent_messages:
+                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
+                    sent_messages.append((coin, h, level, 222))
+                    print('✅ TRADE\n' + msg)
+                    return None
 
     if side == 'dn':
         if best_bid < level:
@@ -75,14 +90,29 @@ def process_depth(coin, market_type, bids: dict, asks: dict, level, side, avg_vo
                    f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
 
             if max_vol_verified and max_vol_close_to_level and price_dist_to_max and sec_vol_verified:
+                if (coin, h, level, 333) not in sent_messages:
+                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
+                    sent_messages.append((coin, h, level, 333))
+                    print('✅ TRADE\n' + msg)
+                    return None
+
+            best_bid_biggest = best_bid_value >= avg_vol * avg_vol_mpl
+            best_bid_biggest_close_to_level =  level <= best_bid <= level + level * ((atr * atr_dis_mpl) / 100)
+            if best_bid_biggest_close_to_level and best_bid_biggest:
+                msg = (f'{coin} ({market_type})\n'
+                       f'Best BID is {best_bid_value} = {round(best_bid_value / avg_vol, 2)} x avg.vol\n'
+                       f'Best BID is close to level: {level}')
                 if (coin, h, level, 444) not in sent_messages:
                     personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
                     sent_messages.append((coin, h, level, 444))
                     print('✅ TRADE\n' + msg)
+                    return None
 
     if side not in ['up', 'dn']:
         print('Wrong side! : ', side)
+        return None
 
+    return None
 
 async def connect_and_listen(stream_url):
     while not global_stop.is_set():
