@@ -1,7 +1,5 @@
 import os
 import time
-
-import requests
 import telebot
 from dotenv import load_dotenv
 from threading import Thread
@@ -44,14 +42,13 @@ def calculate_pairs(pairs_dict, shared_results):
                     ts_percent_futures = float(ts[0]) / (close[-1] / 100)
                     ts_percent_spot = float(ts[1]) / (close[-1] / 100) if ts[1] else 0
 
-                    if ts_percent_futures <= ts_filter_f and ts_percent_spot <= ts_filter_s and x_atr_per >= atr_filter:
+                    if ts_percent_futures <= ts_filter_f and 0 < ts_percent_spot <= ts_filter_s and x_atr_per >= atr_filter:
                         result = [symbol, ts_percent_futures, ts_percent_spot, x_atr_per]
                         shared_results.append(result)
 
         except Exception as e:
             personal_message = f"⛔️ Error in downloading klines (get_pairs) for {symbol}: {e} {futures_klines}"
             personal_bot.send_message(personal_id, personal_message)
-        # time.sleep(0)  # Throttle API requests to avoid overloading the system
 
 
 def split_list(input_list: list, num_parts: int):
@@ -143,52 +140,45 @@ def get_pairs():
 #     get_pairs()
 
 
-def combined_klines(symbol, frame, request_limit_length, market_type: str):
+import os
+import requests
+import sys
+
+
+def combined_klines(symbol, frame, request_limit_length, market_type: str) -> list or str:
     futures_klines = f'https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={frame}&limit={request_limit_length}'
     spot_klines = f'https://api.binance.com/api/v3/klines?symbol={symbol}&interval={frame}&limit={request_limit_length}'
-
     url = futures_klines if market_type == "futures" else spot_klines
+
     response = requests.get(url)
 
     if response.status_code == 200:
-
-        response_length = len(response.json()) if response.json() != None else 0
+        response_data = response.json()
+        response_length = len(response_data) if response_data else 0
 
         if response_length == request_limit_length:
-            binance_candle_data = response.json()
-            c_time = list(float(i[0]) for i in binance_candle_data)
-            c_open = list(float(i[1]) for i in binance_candle_data)
-            c_high = list(float(i[2]) for i in binance_candle_data)
-            c_low = list(float(i[3]) for i in binance_candle_data)
-            c_close = list(float(i[4]) for i in binance_candle_data)
-            c_volume = list(float(i[5]) for i in binance_candle_data)
-            buy_volume = list(float(i[9]) for i in binance_candle_data)
-            sell_volume = [c_volume[0] - buy_volume[0]]
+            c_time = [float(i[0]) for i in response_data]
+            c_open = [float(i[1]) for i in response_data]
+            c_high = [float(i[2]) for i in response_data]
+            c_low = [float(i[3]) for i in response_data]
+            c_close = [float(i[4]) for i in response_data]
+            c_volume = [float(i[5]) for i in response_data]
+            buy_volume = [float(i[9]) for i in response_data]
+            sell_volume = [c_volume[i] - buy_volume[i] for i in range(len(c_volume))]
 
             avg_vol = sum(c_volume) / len(c_volume)
 
-            if len(c_open) != len(c_high) != len(c_low) != len(c_close) != len(c_volume):
-                msg = (f"⛔️ Length error for klines data for {symbol} ({market_type}), status code {response.status_code}\n"
-                       f"{url}")
-                # if market_type == 'f': personal_bot.send_message(personal_id, msg)
-                if market_type == 'f': print(msg)
-            else:
+            if len(c_open) == len(c_high) == len(c_low) == len(c_close) == len(c_volume):
                 return [c_time, c_open, c_high, c_low, c_close, avg_vol, buy_volume, sell_volume]
-
+            else:
+                return f"⛔️ Length error for klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"
         else:
-            msg = (f"⛔️ Not enough ({response_length}/{request_limit_length}) klines data for {symbol} ({market_type}), status code {response.status_code}\n"
-                   f"{url}")
-            # if market_type == 'f': personal_bot.send_message(personal_id, msg)
-            if market_type == 'f': print(msg)
+            return f"⛔️ Not enough ({response_length}/{request_limit_length}) klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"
 
     elif response.status_code == 429:
-        msg = f"⛔️ {symbol} ({market_type}) LIMITS REACHED !!!! 429 CODE !!!!"
-        # personal_bot.send_message(personal_id, msg)
-        print(msg)
-        exit()
+        msg = f"⛔️ {symbol} ({market_type}) RATE LIMIT REACHED !!! 429 CODE !!!"
+        personal_bot.send_message(personal_id, msg)
+        sys.exit("Program terminated due to Binance API rate limits.")
 
     else:
-        msg = (f"⛔️ No klines data for {symbol} ({market_type}), status code {response.status_code}\n"
-               f"{url}")
-        # if market_type == 'f': personal_bot.send_message(personal_id, msg)
-        if market_type == 'f': print(msg)
+        return f"⛔️ No klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"

@@ -94,39 +94,48 @@ def levels_search(coins, wait_time):
         frames = {'1m': 5, '5m': 1, '15m': 1}
 
         for timeframe, window in frames.items():
-            spot_klines = combined_klines(symbol, timeframe, 99, 'spot') if ts_percent_spot != 0 else None
             futu_klines = combined_klines(symbol, timeframe, 99, 'futures') if ts_percent_futures != 0 else None
+            spot_klines = combined_klines(symbol, timeframe, 99, 'spot') if ts_percent_spot != 0 else None
 
             if not futu_klines:
-                personal_bot.send_message(personal_id, f"⛔️ Main file. Error in {symbol} futures klines data!")
+                personal_bot.send_message(personal_id, f'Ticksize for {symbol}(futures) is missing!')
+                continue
+            elif isinstance(futu_klines, str):
+                personal_bot.send_message(personal_id, futu_klines)
+                continue
             else:
-                if spot_klines:
-                    s_high, s_low, s_close, avg_vol = spot_klines[2], spot_klines[3], spot_klines[4], spot_klines[5]
-                    if timeframe == '1m':
-                        minute_spot_avg_volume = int(avg_vol)
-                    for i in range(c_room, len(s_high)):
-                        upper = upper_levels_check(s_high, s_close[-1], x_atr_per, i, window)
-                        lower = lower_levels_check(s_low, s_close[-1], x_atr_per, i, window)
-                        if upper:
-                            if not any(key[3] == upper for key in tracked_levels):
-                                tracked_levels[(symbol, timeframe, "spot", upper, max(futu_klines[2][-i: -1]), "up")] = minute_spot_avg_volume, x_atr_per
-                        if lower:
-                            if not any(key[3] == lower for key in tracked_levels):
-                                tracked_levels[(symbol, timeframe, "spot", lower, min(futu_klines[3][-i: -1]), "dn")] = minute_spot_avg_volume, x_atr_per
+                f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
+                if timeframe == '1m':
+                    minute_futures_avg_volume = int(avg_vol)
+                for i in range(c_room, len(f_high)):
+                    upper = upper_levels_check(f_high, f_close[-1], x_atr_per, i, window)
+                    lower = lower_levels_check(f_low, f_close[-1], x_atr_per, i, window)
+                    if upper:
+                        if not any(key[3] == upper for key in tracked_levels):
+                            tracked_levels[(symbol, timeframe, "futures", upper, upper, "up")] = minute_futures_avg_volume, x_atr_per
+                    if lower:
+                        if not any(key[3] == lower for key in tracked_levels):
+                            tracked_levels[(symbol, timeframe, "futures", lower, lower, "dn")] = minute_futures_avg_volume, x_atr_per
 
-                else:
-                    f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
-                    if timeframe == '1m':
-                        minute_futures_avg_volume = int(avg_vol)
-                    for i in range(c_room, len(f_high)):
-                        upper = upper_levels_check(f_high, f_close[-1], x_atr_per, i, window)
-                        lower = lower_levels_check(f_low, f_close[-1], x_atr_per, i, window)
-                        if upper:
-                            if not any(key[3] == upper for key in tracked_levels):
-                                tracked_levels[(symbol, timeframe, "futures", upper, upper, "up")] = minute_futures_avg_volume, x_atr_per
-                        if lower:
-                            if not any(key[3] == lower for key in tracked_levels):
-                                tracked_levels[(symbol, timeframe, "futures", lower, lower, "dn")] = minute_futures_avg_volume, x_atr_per
+            if not spot_klines:
+                print(f'Ticksize for {symbol}(spot) is missing!')
+                continue
+            elif isinstance(spot_klines, str):
+                print(spot_klines)
+                continue
+            else:
+                s_high, s_low, s_close, avg_vol = spot_klines[2], spot_klines[3], spot_klines[4], spot_klines[5]
+                if timeframe == '1m':
+                    minute_spot_avg_volume = int(avg_vol)
+                for i in range(c_room, len(s_high)):
+                    upper = upper_levels_check(s_high, s_close[-1], x_atr_per, i, window)
+                    lower = lower_levels_check(s_low, s_close[-1], x_atr_per, i, window)
+                    if upper:
+                        if not any(key[3] == upper for key in tracked_levels):
+                            tracked_levels[(symbol, timeframe, "spot", upper, max(futu_klines[2][-i: -1]), "up")] = minute_spot_avg_volume, x_atr_per
+                    if lower:
+                        if not any(key[3] == lower for key in tracked_levels):
+                            tracked_levels[(symbol, timeframe, "spot", lower, min(futu_klines[3][-i: -1]), "dn")] = minute_spot_avg_volume, x_atr_per
 
         time.sleep(wait_time)
 
@@ -135,7 +144,6 @@ levels_lock = asyncio.Lock()
 
 
 async def levels_threads(coins_top_list):
-
     coins_list = split_list(coins_top_list, 10)
     request_weight = len(coins_top_list) * 9
     wait_time = 1 if request_weight <= 1100 else 5
