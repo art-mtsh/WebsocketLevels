@@ -72,7 +72,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
 
 
 def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or None:
-    best_bid: float = list(bids.keys())[0]
+    best_bid: float = list(bids.keys())[-1]
 
     m = datetime.now().strftime('%M')
 
@@ -167,12 +167,12 @@ async def connect_and_listen(stream_url):
                                     if side == 'up':
                                         if process_ask(coin, market_type, asks, origin_level, avg_vol, atr):
                                             dropped_levels.add(key)
-                                            print(f'Level (ask) added to dropped levels: {key}')
+                                            print(f'Level added to dropped. Ask {list(asks.keys())[0]} < {origin_level} (level)')
 
                                     elif side == 'dn':
                                         if process_bid(coin, market_type, bids, origin_level, avg_vol, atr):
                                             dropped_levels.add(key)
-                                            print(f'Level (bid) added to dropped levels: {key}')
+                                            print(f'Level added to dropped. Bid {list(bids.keys())[-1]} < {origin_level} (level)')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
