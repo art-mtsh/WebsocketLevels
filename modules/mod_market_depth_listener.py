@@ -5,6 +5,7 @@ import websockets
 import telebot
 from datetime import datetime
 from dotenv import load_dotenv
+
 from modules.mod_levels_search import tracked_levels, dropped_levels
 from modules.global_stopper import global_stop, sent_messages
 
@@ -21,98 +22,103 @@ personal_id = int(os.getenv('PERSONAL_ID'))
 levels_lock = asyncio.Lock()
 
 
-def process_depth(coin, market_type, bids: dict, asks: dict, level, side, avg_vol, atr) -> tuple or None:
-    best_bid: float = list(bids.keys())[-1]
-    best_bid_value = list(bids.values())[-1]
+def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or None:
     best_ask: float = list(asks.keys())[0]
-    best_ask_value = list(asks.values())[0]
 
-    h, m = datetime.now().strftime('%H'), datetime.now().strftime('%M')
+    m = datetime.now().strftime('%M')
 
     avg_vol_mpl = float(os.getenv('AVG_VOL_MPL', 4))
-    sec_vol_mpl = float(os.getenv('SEC_VOL_MPL', 1.5))
+    sec_vol_mpl = float(os.getenv('SEC_VOL_MPL', 2))
     atr_dis_mpl = float(os.getenv('ATR_DIS_MPL', 0.5))
     best_price_dist = float(os.getenv('BEST_PRICE_DIST', 0.1))
 
-    if side == 'up':
-        if best_ask > level:
-            return True
+    if best_ask > level:
+        return True
+    else:
+        asks_to_level = {price: volume for price, volume in asks.items() if price <= level}
+        first_volume_price, first_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-1]
+        distance_to_max = round(abs(best_ask - first_volume_price) / (first_volume_price / 100), 2)
+
+        if len(asks_to_level) > 2:
+            second_volume_price, second_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-2]
+            third_volume_price, third_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-3]
+            next_vol_verified = first_volume_volume >= second_volume_volume * sec_vol_mpl or second_volume_volume >= third_volume_volume * sec_vol_mpl
+        elif len(asks_to_level) > 1:
+            second_volume_price, second_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-2]
+            next_vol_verified = first_volume_volume >= second_volume_volume * sec_vol_mpl
+        elif len(asks_to_level) == 1:
+            next_vol_verified = True
         else:
-            max_volume_price, max_volume_volume = sorted(asks.items(), key=lambda x: x[1])[-1]
-            second_volume_price, second_volume_volume = sorted(asks.items(), key=lambda x: x[1])[-2]
-            distance_to_max = round(abs(best_ask - max_volume_price) / (max_volume_price / 100), 2)
+            personal_bot.send_message(personal_id, 'SOME SHIT')
+            next_vol_verified = False
 
-            max_vol_verified = max_volume_volume >= avg_vol * avg_vol_mpl
-            sec_vol_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
-            max_vol_close_to_level = level >= max_volume_price >= level - level * ((atr * atr_dis_mpl) / 100)
-            price_dist_to_max = distance_to_max <= best_price_dist
+        max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
+        max_vol_close_to_level = level >= first_volume_price >= level - level * ((atr * atr_dis_mpl) / 100)
+        price_dist_to_max = distance_to_max <= best_price_dist
 
-            msg = (f'{coin} ({market_type})\n'
-                   f'{"☑️" if max_vol_verified else "◻️"} max_vol_verified: {int(max_volume_volume / 1000)}k ({round(max_volume_volume / avg_vol, 2)} x avg.vol)\n'
-                   f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
-                   f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
+        msg = (f'{coin} ({market_type})\n'
+               f'{"☑️" if max_vol_verified else "◻️"} max_vol_verified: {int(first_volume_volume / 1000)}k ({round(first_volume_volume / avg_vol, 2)} x avg.vol)\n'
+               f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
+               f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
 
-            if max_vol_verified and max_vol_close_to_level and price_dist_to_max and sec_vol_verified:
-                if (coin, h, level, 111) not in sent_messages:
-                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                    sent_messages.append((coin, h, level, 111))
-                    print('✅ TRADE\n' + msg)
-                    return None
-
-            best_ask_biggest = best_ask_value >= avg_vol * avg_vol_mpl
-            best_ask_biggest_close_to_level =  level >= best_ask >= level - level * ((atr * atr_dis_mpl) / 100)
-            if best_ask_biggest_close_to_level and best_ask_biggest:
-                msg = (f'{coin} ({market_type})\n'
-                       f'Best ASK is {best_ask_value} = {round(best_ask_value / avg_vol, 2)} x avg.vol\n'
-                       f'Best ASK is close to level: {level}')
-                if (coin, h, level, 222) not in sent_messages:
-                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                    sent_messages.append((coin, h, level, 222))
-                    print('✅ TRADE\n' + msg)
-                    return None
-
-    if side == 'dn':
-        if best_bid < level:
-            return True
-        else:
-            max_volume_price, max_volume_volume = sorted(bids.items(), key=lambda x: x[1])[-1]
-            second_volume_price, second_volume_volume = sorted(bids.items(), key=lambda x: x[1])[-2]
-            distance_to_max = round(abs(best_bid - max_volume_price) / (max_volume_price / 100), 2)
-
-            max_vol_verified = max_volume_volume >= avg_vol * avg_vol_mpl
-            sec_vol_verified = max_volume_volume >= second_volume_volume * sec_vol_mpl
-            max_vol_close_to_level = level <= max_volume_price <= level + level * ((atr * atr_dis_mpl) / 100)
-            price_dist_to_max = distance_to_max <= best_price_dist
-
-            msg = (f'{coin} ({market_type})\n'
-                   f'{"☑️" if max_vol_verified else "◻️"} max_vol_verified: {int(max_volume_volume / 1000)}k ({round(max_volume_volume / avg_vol, 2)} x avg.vol)\n'
-                   f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
-                   f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
-
-            if max_vol_verified and max_vol_close_to_level and price_dist_to_max and sec_vol_verified:
-                if (coin, h, level, 333) not in sent_messages:
-                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                    sent_messages.append((coin, h, level, 333))
-                    print('✅ TRADE\n' + msg)
-                    return None
-
-            best_bid_biggest = best_bid_value >= avg_vol * avg_vol_mpl
-            best_bid_biggest_close_to_level =  level <= best_bid <= level + level * ((atr * atr_dis_mpl) / 100)
-            if best_bid_biggest_close_to_level and best_bid_biggest:
-                msg = (f'{coin} ({market_type})\n'
-                       f'Best BID is {best_bid_value} = {round(best_bid_value / avg_vol, 2)} x avg.vol\n'
-                       f'Best BID is close to level: {level}')
-                if (coin, h, level, 444) not in sent_messages:
-                    personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
-                    sent_messages.append((coin, h, level, 444))
-                    print('✅ TRADE\n' + msg)
-                    return None
-
-    if side not in ['up', 'dn']:
-        print('Wrong side! : ', side)
-        return None
+        if next_vol_verified and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+            if (coin, m, level) not in sent_messages:
+                personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
+                sent_messages.append((coin, m, level))
+                print('✅ TRADE\n' + msg)
+                return None
 
     return None
+
+
+def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or None:
+    best_bid: float = list(bids.keys())[0]
+
+    m = datetime.now().strftime('%M')
+
+    avg_vol_mpl = float(os.getenv('AVG_VOL_MPL', 4))
+    sec_vol_mpl = float(os.getenv('SEC_VOL_MPL', 2))
+    atr_dis_mpl = float(os.getenv('ATR_DIS_MPL', 0.5))
+    best_price_dist = float(os.getenv('BEST_PRICE_DIST', 0.1))
+
+    if best_bid < level:
+        return True
+    else:
+        bids_to_level = {price: volume for price, volume in bids.items() if price >= level}
+        first_volume_price, first_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-1]
+        distance_to_max = round(abs(best_bid - first_volume_price) / (first_volume_price / 100), 2)
+
+        if len(bids_to_level) > 2:
+            second_volume_price, second_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-2]
+            third_volume_price, third_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-3]
+            next_vol_verified = first_volume_volume >= second_volume_volume * sec_vol_mpl or second_volume_volume >= third_volume_volume * sec_vol_mpl
+        elif len(bids_to_level) > 1:
+            second_volume_price, second_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-2]
+            next_vol_verified = first_volume_volume >= second_volume_volume * sec_vol_mpl
+        elif len(bids_to_level) == 1:
+            next_vol_verified = True
+        else:
+            personal_bot.send_message(personal_id, 'SOME SHIT')
+            next_vol_verified = False
+
+        max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
+        max_vol_close_to_level = level <= first_volume_price <= level + level * ((atr * atr_dis_mpl) / 100)
+        price_dist_to_max = distance_to_max <= best_price_dist
+
+        msg = (f'{coin} ({market_type})\n'
+               f'{"☑️" if max_vol_verified else "◻️"} max_vol_verified: {int(first_volume_volume / 1000)}k ({round(first_volume_volume / avg_vol, 2)} x avg.vol)\n'
+               f'{"☑️" if max_vol_close_to_level else "◻️"} max_vol_close_to_level: {level}\n'
+               f'{"☑️" if price_dist_to_max else "◻️"} max_dist_ver: {distance_to_max}% to max vol\n')
+
+        if next_vol_verified and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+            if (coin, m, level) not in sent_messages:
+                personal_bot.send_message(personal_id, '✅ TRADE\n' + msg)
+                sent_messages.append((coin, m, level))
+                print('✅ TRADE\n' + msg)
+                return None
+
+    return None
+
 
 async def connect_and_listen(stream_url):
     while not global_stop.is_set():
@@ -158,9 +164,15 @@ async def connect_and_listen(stream_url):
 
                                 if market_type == m_type and coin == symbol and key not in init_dropped_levels:
 
-                                    if process_depth(coin, market_type, bids, asks, origin_level, side, avg_vol, atr):
-                                        dropped_levels.add(key)
-                                        print(f'Level added to dropped levels: {key}')
+                                    if side == 'up':
+                                        if process_ask(coin, market_type, asks, origin_level, avg_vol, atr):
+                                            dropped_levels.add(key)
+                                            print(f'Level (ask) added to dropped levels: {key}')
+
+                                    elif side == 'dn':
+                                        if process_bid(coin, market_type, bids, origin_level, avg_vol, atr):
+                                            dropped_levels.add(key)
+                                            print(f'Level (bid) added to dropped levels: {key}')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
