@@ -57,7 +57,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
         price_dist_to_max = distance_to_max <= best_price_dist
 
         msg = (f'{coin} ({market_type})\n'
-               f'sec_vol_mpl: x{next_vol_verified}'
+               f'sec_vol_mpl: x{round(next_vol_verified, 2)}\n'
                f'max_vol_verified: {int(first_volume_volume / 1000)}k ({round(first_volume_volume / avg_vol, 2)} x avg.vol)\n'
                f'max_vol_close_to_level: {level}\n'
                f'max_dist_ver: {distance_to_max}% to max vol\n')
@@ -107,7 +107,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
         price_dist_to_max = distance_to_max <= best_price_dist
 
         msg = (f'{coin} ({market_type})\n'
-               f'sec_vol_mpl: x{next_vol_verified}'
+               f'sec_vol_mpl: x{round(next_vol_verified, 2)}\n'
                f'max_vol_verified: {int(first_volume_volume / 1000)}k ({round(first_volume_volume / avg_vol, 2)} x avg.vol)\n'
                f'max_vol_close_to_level: {level}\n'
                f'max_dist_ver: {distance_to_max}% to max vol\n')
