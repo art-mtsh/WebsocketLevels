@@ -1,19 +1,26 @@
+import os
+import telebot
 import asyncio
 from dotenv import load_dotenv
-from modules.get_pairsV5 import get_pairs
+from modules.get_pairsV5 import get_pairs, split_list
 from modules.mod_market_depth_listener import listen_market_depth
 from modules.mod_levels_search import levels_threads, dropped_levels, tracked_levels
 from modules.global_stopper import global_stop, stopper_setter, sent_messages
-from modules.bot_handler import message_handler, messages_to_send
+
+# import logging
+# from main_log_config import setup_logger
+# setup_logger()
+
+bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
+personal_bot = telebot.TeleBot(bot_token)
+personal_id = int(os.getenv('PERSONAL_ID'))
 
 levels_lock = asyncio.Lock()
-semaphore = asyncio.Semaphore(7)
-
+semaphore = asyncio.Semaphore(5)
 
 async def limited_task(task, *args):
     async with semaphore:
         return await task(*args)
-
 
 async def monitor_time_and_control_threads():
     while True:
@@ -23,20 +30,18 @@ async def monitor_time_and_control_threads():
         levels_task = asyncio.create_task(limited_task(levels_threads, pairs_lists))
         stopper_task = asyncio.create_task(limited_task(stopper_setter))
         listener_task = asyncio.create_task(limited_task(listen_market_depth, pairs_lists))
-        message_task = asyncio.create_task(limited_task(message_handler))  # Запускаємо обробник повідомлень
 
         await stopper_task
         await levels_task
         await listener_task
-        await message_task
 
-        print('All asyncs done their work! Cleaning levels and messages...')
+        print('All asyncs done their work! Cleaning levels...')
         async with levels_lock:
             dropped_levels.clear()
             tracked_levels.clear()
             global_stop.clear()
             sent_messages.clear()
-            messages_to_send.clear()
+
 
 
 if __name__ == '__main__':
