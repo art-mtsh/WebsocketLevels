@@ -2,10 +2,6 @@ import threading
 import asyncio
 from datetime import datetime
 
-# import logging
-# from main_log_config import setup_logger
-# setup_logger()
-
 global_stop = threading.Event()
 sent_messages = []
 

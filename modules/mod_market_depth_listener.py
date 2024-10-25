@@ -2,10 +2,8 @@ import os
 import asyncio
 import json
 import websockets
-from modules.bot_handler import bot_message
 from datetime import datetime
-from dotenv import load_dotenv
-
+from modules.bot_handler import messages_to_send
 from modules.mod_levels_search import tracked_levels, dropped_levels
 from modules.global_stopper import global_stop, sent_messages
 
@@ -13,7 +11,6 @@ from modules.global_stopper import global_stop, sent_messages
 # from main_log_config import setup_logger
 # setup_logger()
 
-load_dotenv('keys.env')
 
 levels_lock = asyncio.Lock()
 
@@ -45,7 +42,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
         elif len(asks_to_level) == 1:
             next_vol_verified = sec_vol_mpl
         else:
-            bot_message('SOME SHIT')
+            messages_to_send.add('SOME SHIT')
             next_vol_verified = 0
 
         max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
@@ -61,7 +58,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
 
         if next_vol_verified >= sec_vol_mpl and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
             if (coin, m, level) not in sent_messages:
-                bot_message('✅ TRADE\n' + msg)
+                messages_to_send.add('✅ TRADE\n' + msg)
                 sent_messages.append((coin, m, level))
                 print('✅ TRADE\n' + msg)
                 return None
@@ -96,7 +93,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
         elif len(bids_to_level) == 1:
             next_vol_verified = sec_vol_mpl
         else:
-            bot_message('SOME SHIT')
+            messages_to_send.add('SOME SHIT')
             next_vol_verified = 0
 
         max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
@@ -112,7 +109,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
 
         if next_vol_verified >= sec_vol_mpl and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
             if (coin, m, level) not in sent_messages:
-                bot_message('✅ TRADE\n' + msg)
+                messages_to_send.add('✅ TRADE\n' + msg)
                 sent_messages.append((coin, m, level))
                 print('✅ TRADE\n' + msg)
                 return None
@@ -125,7 +122,7 @@ async def connect_and_listen(stream_url):
         # trying to connect to websocket
         try:
             async with websockets.connect(stream_url) as websocket:
-                bot_message("Connected to the WebSocket...")
+                messages_to_send.add("Connected to the WebSocket...")
 
                 while not global_stop.is_set():
 
@@ -157,7 +154,7 @@ async def connect_and_listen(stream_url):
                                 bids, asks = data['b'][::-1], data['a']
                                 bids, asks = {float(v[0]): float(v[1]) for v in bids}, {float(v[0]): float(v[1]) for v in asks}
                             else:
-                                bot_message(f"Broken data returned for {coin}.")
+                                messages_to_send.add(f"Broken data returned for {coin}.")
 
                             for key, value in init_tracked_levels.items():
                                 symbol, timeframe, market_type, origin_level, futures_according_level, side, avg_vol, atr = key[0], key[1], key[2], key[3], key[4], key[5], value[0], value[1]
@@ -175,12 +172,12 @@ async def connect_and_listen(stream_url):
                                             print(f'{coin} ({m_type}), level added to dropped. Bid {list(bids.keys())[-1]} < {origin_level} (level)')
 
                     except websockets.exceptions.ConnectionClosed:
-                        bot_message("Connection closed.")
+                        messages_to_send.add("Connection closed.")
                         await asyncio.sleep(10)
                         break  # Break the inner loop to reconnect
 
         except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
-            bot_message(f"Connection error: {e}. Script is stopped")
+            messages_to_send.add(f"Connection error: {e}. Script is stopped")
             await asyncio.sleep(10)  # Wait before retrying
 
 

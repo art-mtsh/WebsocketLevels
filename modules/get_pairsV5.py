@@ -1,13 +1,6 @@
 import time
-from modules.bot_handler import bot_message
-from dotenv import load_dotenv
+from modules.bot_handler import messages_to_send
 from threading import Thread
-
-# import logging
-# from main_log_config import setup_logger
-# setup_logger()
-
-load_dotenv('keys.env')
 
 excluded = ['OMGUSDT', 'BTCUSDT', 'ETHUSDT', 'VANRYUSDT', 'BTCUSDT_250328', 'ETHUSDT_250328']
 
@@ -43,7 +36,7 @@ def calculate_pairs(pairs_dict, shared_results):
 
         except Exception as e:
             personal_message = f"⛔️ Error in downloading klines (get_pairs) for {symbol}: {e} {futures_klines}"
-            bot_message(personal_message)
+            messages_to_send.add(personal_message)
 
 
 def split_list(input_list: list, num_parts: int):
@@ -125,7 +118,7 @@ def get_pairs():
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
     msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
-    bot_message(msg)
+    messages_to_send.add(msg)
     time.sleep(60)
 
     return result
@@ -172,7 +165,7 @@ def combined_klines(symbol, frame, request_limit_length, market_type: str) -> li
 
     elif response.status_code == 429:
         msg = f"⛔️ {symbol} ({market_type}) RATE LIMIT REACHED !!! 429 CODE !!!"
-        bot_message(msg)
+        messages_to_send.add(msg)
         sys.exit("Program terminated due to Binance API rate limits.")
 
     else:
