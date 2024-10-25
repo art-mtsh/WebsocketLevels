@@ -1,8 +1,6 @@
-import os
-import telebot
 import asyncio
 from dotenv import load_dotenv
-from modules.get_pairsV5 import get_pairs, split_list
+from modules.get_pairsV5 import get_pairs
 from modules.mod_market_depth_listener import listen_market_depth
 from modules.mod_levels_search import levels_threads, dropped_levels, tracked_levels
 from modules.global_stopper import global_stop, stopper_setter, sent_messages
@@ -11,16 +9,15 @@ from modules.global_stopper import global_stop, stopper_setter, sent_messages
 # from main_log_config import setup_logger
 # setup_logger()
 
-bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
-personal_bot = telebot.TeleBot(bot_token)
-personal_id = int(os.getenv('PERSONAL_ID'))
 
 levels_lock = asyncio.Lock()
 semaphore = asyncio.Semaphore(5)
 
+
 async def limited_task(task, *args):
     async with semaphore:
         return await task(*args)
+
 
 async def monitor_time_and_control_threads():
     while True:
@@ -41,7 +38,6 @@ async def monitor_time_and_control_threads():
             tracked_levels.clear()
             global_stop.clear()
             sent_messages.clear()
-
 
 
 if __name__ == '__main__':

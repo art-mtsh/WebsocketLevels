@@ -1,5 +1,3 @@
-import os
-import telebot
 import threading
 import asyncio
 from datetime import datetime
@@ -7,9 +5,6 @@ from datetime import datetime
 # import logging
 # from main_log_config import setup_logger
 # setup_logger()
-bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
-personal_bot = telebot.TeleBot(bot_token)
-personal_id = int(os.getenv('PERSONAL_ID'))
 
 global_stop = threading.Event()
 sent_messages = []

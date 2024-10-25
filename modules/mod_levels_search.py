@@ -2,7 +2,7 @@ import os
 import threading
 import asyncio
 import time
-import telebot
+from modules.bot_handler import bot_message
 from datetime import datetime
 from dotenv import load_dotenv
 from modules.get_pairsV5 import combined_klines
@@ -16,10 +16,6 @@ from modules.get_pairsV5 import split_list
 tracked_levels = {}
 dropped_levels = set()
 load_dotenv('keys.env')
-
-bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
-personal_bot = telebot.TeleBot(bot_token)
-personal_id = int(os.getenv('PERSONAL_ID'))
 
 
 def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
@@ -98,10 +94,10 @@ def levels_search(coins, wait_time):
             spot_klines = combined_klines(symbol, timeframe, 99, 'spot') if ts_percent_spot != 0 else None
 
             if not futu_klines:
-                personal_bot.send_message(personal_id, f'Ticksize for {symbol}(futures) is missing!')
+                bot_message(f'Ticksize for {symbol}(futures) is missing!')
                 continue
             elif isinstance(futu_klines, str):
-                personal_bot.send_message(personal_id, futu_klines)
+                bot_message(futu_klines)
                 continue
             else:
                 f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
