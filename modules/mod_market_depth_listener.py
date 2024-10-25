@@ -171,12 +171,12 @@ async def connect_and_listen(stream_url):
                                     if side == 'up':
                                         if process_ask(coin, market_type, asks, origin_level, avg_vol, atr):
                                             dropped_levels.add(key)
-                                            print(f'Level added to dropped. Ask {list(asks.keys())[0]} < {origin_level} (level)')
+                                            print(f'{coin} ({m_type}), level added to dropped. Ask {list(asks.keys())[0]} < {origin_level} (level)')
 
                                     elif side == 'dn':
                                         if process_bid(coin, market_type, bids, origin_level, avg_vol, atr):
                                             dropped_levels.add(key)
-                                            print(f'Level added to dropped. Bid {list(bids.keys())[-1]} < {origin_level} (level)')
+                                            print(f'{coin} ({m_type}), level added to dropped. Bid {list(bids.keys())[-1]} < {origin_level} (level)')
 
                     except websockets.exceptions.ConnectionClosed:
                         personal_bot.send_message(personal_id, "Connection closed.")
