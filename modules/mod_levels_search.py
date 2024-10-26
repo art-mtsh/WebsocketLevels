@@ -106,7 +106,7 @@ def levels_search(coins, wait_time):
             else:
                 f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
                 if timeframe == '1m':
-                    minute_futures_avg_volume = int(avg_vol)
+                    minute_futures_avg_volume = avg_vol
                 for i in range(c_room, len(f_high)):
                     upper = upper_levels_check(f_high, f_close[-1], x_atr_per, i, window)
                     lower = lower_levels_check(f_low, f_close[-1], x_atr_per, i, window)
@@ -126,7 +126,7 @@ def levels_search(coins, wait_time):
             else:
                 s_high, s_low, s_close, avg_vol = spot_klines[2], spot_klines[3], spot_klines[4], spot_klines[5]
                 if timeframe == '1m':
-                    minute_spot_avg_volume = int(avg_vol)
+                    minute_spot_avg_volume = avg_vol
                 for i in range(c_room, len(s_high)):
                     upper = upper_levels_check(s_high, s_close[-1], x_atr_per, i, window)
                     lower = lower_levels_check(s_low, s_close[-1], x_atr_per, i, window)
