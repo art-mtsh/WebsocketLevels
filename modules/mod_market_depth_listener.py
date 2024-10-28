@@ -35,7 +35,9 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
     if best_ask > level:
         return True
     else:
-        asks_to_level = {price: volume for price, volume in asks.items() if price <= level + level * (atr / 100)}
+        top_level_border = level + level * ((atr * atr_dis_mpl) / 100)
+        bot_level_border = level - level * ((atr * atr_dis_mpl) / 100)
+        asks_to_level = {price: volume for price, volume in asks.items() if bot_level_border <= price <= top_level_border}
         first_volume_price, first_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-1]
         distance_to_max = round(abs(best_ask - first_volume_price) / (first_volume_price / 100), 2)
 
@@ -43,17 +45,11 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
             second_volume_price, second_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-2]
             third_volume_price, third_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-3]
             next_vol_verified = max(first_volume_volume / second_volume_volume, second_volume_volume / third_volume_volume)
-        elif len(asks_to_level) > 1:
-            second_volume_price, second_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-2]
-            next_vol_verified = first_volume_volume / second_volume_volume
-        elif len(asks_to_level) == 1:
-            next_vol_verified = sec_vol_mpl
         else:
             personal_bot.send_message(personal_id, 'SOME SHIT')
             next_vol_verified = 0
 
         max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
-        max_vol_close_to_level = level >= first_volume_price >= level - level * ((atr * atr_dis_mpl) / 100)
         price_dist_to_max = distance_to_max <= best_price_dist
 
         msg = (f'✅ {coin} ({market_type})\n'
@@ -62,7 +58,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
                f'max.vol: {first_volume_price}, {round(first_volume_volume / 1000, 2)}k\n'
                f'({round(next_vol_verified, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
 
-        if next_vol_verified >= sec_vol_mpl and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+        if next_vol_verified >= sec_vol_mpl and max_vol_verified and price_dist_to_max:
             if (coin, m, level) not in sent_messages:
                 personal_bot.send_message(personal_id, msg)
                 sent_messages.append((coin, m, level))
@@ -85,7 +81,9 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
     if best_bid < level:
         return True
     else:
-        bids_to_level = {price: volume for price, volume in bids.items() if price >= level - level * (atr / 100)}
+        top_level_border = level + level * ((atr * atr_dis_mpl) / 100)
+        bot_level_border = level - level * ((atr * atr_dis_mpl) / 100)
+        bids_to_level = {price: volume for price, volume in bids.items() if bot_level_border <= price <= top_level_border}
         first_volume_price, first_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-1]
         distance_to_max = round(abs(best_bid - first_volume_price) / (first_volume_price / 100), 2)
 
@@ -93,17 +91,11 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
             second_volume_price, second_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-2]
             third_volume_price, third_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-3]
             next_vol_verified = max(first_volume_volume / second_volume_volume, second_volume_volume / third_volume_volume)
-        elif len(bids_to_level) > 1:
-            second_volume_price, second_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-2]
-            next_vol_verified = first_volume_volume / second_volume_volume
-        elif len(bids_to_level) == 1:
-            next_vol_verified = sec_vol_mpl
         else:
             personal_bot.send_message(personal_id, 'SOME SHIT')
             next_vol_verified = 0
 
         max_vol_verified = first_volume_volume >= avg_vol * avg_vol_mpl
-        max_vol_close_to_level = level <= first_volume_price <= level + level * ((atr * atr_dis_mpl) / 100)
         price_dist_to_max = distance_to_max <= best_price_dist
 
         msg = (f'✅ {coin} ({market_type})\n'
@@ -112,7 +104,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
                f'max.vol: {first_volume_price}, {round(first_volume_volume / 1000, 2)}k\n'
                f'({round(next_vol_verified, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
 
-        if next_vol_verified >= sec_vol_mpl and max_vol_verified and max_vol_close_to_level and price_dist_to_max:
+        if next_vol_verified >= sec_vol_mpl and max_vol_verified and price_dist_to_max:
             if (coin, m, level) not in sent_messages:
                 personal_bot.send_message(personal_id, msg)
                 sent_messages.append((coin, m, level))
