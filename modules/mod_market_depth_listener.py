@@ -55,7 +55,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
                    f'current price: {best_ask}\n'
                    f'level: {level}\n'
                    f'max.vol: {first_volume_price}, {round(first_volume_volume / 1000, 2)}k\n'
-                   f'({round(next_vol_verified, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
+                   f'({round(next_vol, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
 
             if next_vol_verified and max_vol_verified and price_dist_to_max:
                 if (coin, m, level) not in sent_messages:
@@ -100,7 +100,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
                    f'current price: {best_bid}\n'
                    f'level: {level}\n'
                    f'max.vol: {first_volume_price}, {round(first_volume_volume / 1000, 2)}k\n'
-                   f'({round(next_vol_verified, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
+                   f'({round(next_vol, 2)} x sec.vol, {round(first_volume_volume / avg_vol, 2)} x avg.vol)')
 
             if next_vol_verified and max_vol_verified and price_dist_to_max:
                 if (coin, m, level) not in sent_messages:
