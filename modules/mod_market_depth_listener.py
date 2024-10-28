@@ -35,7 +35,7 @@ def process_ask(coin, market_type, asks: dict, level, avg_vol, atr) -> tuple or 
     if best_ask > level:
         return True
     else:
-        asks_to_level = {price: volume for price, volume in asks.items() if price <= level}
+        asks_to_level = {price: volume for price, volume in asks.items() if price <= level + level * (atr / 100)}
         first_volume_price, first_volume_volume = sorted(asks_to_level.items(), key=lambda x: x[1])[-1]
         distance_to_max = round(abs(best_ask - first_volume_price) / (first_volume_price / 100), 2)
 
@@ -85,7 +85,7 @@ def process_bid(coin, market_type, bids: dict, level, avg_vol, atr) -> tuple or 
     if best_bid < level:
         return True
     else:
-        bids_to_level = {price: volume for price, volume in bids.items() if price >= level}
+        bids_to_level = {price: volume for price, volume in bids.items() if price >= level - level * (atr / 100)}
         first_volume_price, first_volume_volume = sorted(bids_to_level.items(), key=lambda x: x[1])[-1]
         distance_to_max = round(abs(best_bid - first_volume_price) / (first_volume_price / 100), 2)
 
