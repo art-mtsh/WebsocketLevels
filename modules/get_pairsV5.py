@@ -129,7 +129,11 @@ def get_pairs():
     result = [res for res in shared_results]
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
-    msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
+    if result and ts_dict:
+        msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
+    else:
+        msg = 'No instruments avaliable!'
+
     personal_bot.send_message(personal_id, msg)
     time.sleep(60)
 
