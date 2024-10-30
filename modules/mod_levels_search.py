@@ -155,7 +155,7 @@ async def levels_threads(coins_top_list):
     for thread in the_threads:
         await asyncio.to_thread(thread.join)
 
-    print(f'{datetime.now().strftime('%H:%M')} Levels created.')
+    print(f'{datetime.now().strftime('%H:%M:%S')} Levels created.')
 
     await asyncio.sleep(60)
 
@@ -167,7 +167,7 @@ async def levels_threads(coins_top_list):
                 tracked_levels.clear()
                 dropped_levels.clear()
 
-            print(f'{datetime.now().strftime('%H:%M')} Levels are cleared.')
+            print(f'{datetime.now().strftime('%H:%M:%S')} Levels are cleared.')
 
             the_threads = []
             for coins in coins_list:
@@ -177,7 +177,7 @@ async def levels_threads(coins_top_list):
             for thread in the_threads:
                 await asyncio.to_thread(thread.join)
 
-            print(f'{datetime.now().strftime('%H:%M')} Levels updated.')
+            print(f'{datetime.now().strftime('%H:%M:%S')} Levels updated.')
 
             await asyncio.sleep(60)
 

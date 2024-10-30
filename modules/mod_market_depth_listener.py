@@ -125,7 +125,7 @@ async def connect_and_listen(stream_url):
                         init_tracked_levels = tracked_levels.copy()
                         init_dropped_levels = dropped_levels.copy()
 
-                    t = datetime.now().strftime('%H:%M')
+                    t = datetime.now().strftime('%H:%M:%S')
                     if os.getenv(f'levels_check') != t:
                         os.environ[f'levels_check'] = t
                         print(f'{t} Dropped: {len(init_dropped_levels)}, Tracked by WS: {len(init_tracked_levels)}')
