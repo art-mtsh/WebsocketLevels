@@ -17,6 +17,9 @@ tracked_levels = {}
 dropped_levels = set()
 load_dotenv('keys.env')
 
+async_lock = asyncio.Lock()
+threading_lock = threading.Lock()
+
 bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
 personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
@@ -85,9 +88,9 @@ def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
 
 
 def levels_search(coins, wait_time):
+
     for coin_data in coins:
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
-
         minute_spot_avg_volume = 0.0
         minute_futures_avg_volume = 0.0
         c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
@@ -110,11 +113,10 @@ def levels_search(coins, wait_time):
                 for i in range(c_room, len(f_high)):
                     upper = upper_levels_check(f_high, f_close[-1], x_atr_per, i, window)
                     lower = lower_levels_check(f_low, f_close[-1], x_atr_per, i, window)
-                    if upper:
-                        if not any(key[3] == upper for key in tracked_levels):
+                    with threading_lock:
+                        if upper and not any(key[3] == upper for key in tracked_levels):
                             tracked_levels[(symbol, timeframe, "futures", upper, upper, "up")] = minute_futures_avg_volume, x_atr_per
-                    if lower:
-                        if not any(key[3] == lower for key in tracked_levels):
+                        if lower and not any(key[3] == lower for key in tracked_levels):
                             tracked_levels[(symbol, timeframe, "futures", lower, lower, "dn")] = minute_futures_avg_volume, x_atr_per
 
             if not spot_klines:
@@ -130,17 +132,14 @@ def levels_search(coins, wait_time):
                 for i in range(c_room, len(s_high)):
                     upper = upper_levels_check(s_high, s_close[-1], x_atr_per, i, window)
                     lower = lower_levels_check(s_low, s_close[-1], x_atr_per, i, window)
-                    if upper:
-                        if not any(key[3] == upper for key in tracked_levels):
+                    with threading_lock:
+                        if upper and not any(key[3] == upper for key in tracked_levels):
                             tracked_levels[(symbol, timeframe, "spot", upper, max(futu_klines[2][-i: -1]), "up")] = minute_spot_avg_volume, x_atr_per
-                    if lower:
-                        if not any(key[3] == lower for key in tracked_levels):
+                        if lower and not any(key[3] == lower for key in tracked_levels):
                             tracked_levels[(symbol, timeframe, "spot", lower, min(futu_klines[3][-i: -1]), "dn")] = minute_spot_avg_volume, x_atr_per
 
         time.sleep(wait_time)
 
-
-levels_lock = asyncio.Lock()
 
 
 async def levels_threads(coins_top_list):
@@ -162,7 +161,7 @@ async def levels_threads(coins_top_list):
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
         if int(m) % 5 == 0 and int(s) == 0:
 
-            async with levels_lock:
+            async with async_lock:
                 tracked_levels.clear()
                 dropped_levels.clear()
             print('Levels are cleared.')
