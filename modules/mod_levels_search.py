@@ -25,14 +25,15 @@ personal_bot = telebot.TeleBot(bot_token)
 personal_id = int(os.getenv('PERSONAL_ID'))
 
 
-def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
-    check_list = c_high[-i: -1]
+def upper_levels_check(check_list: list, c_close: float, x_atr_per, w: int):
+    c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
+
     check_list_max = max(check_list)
     distance_validated = abs(check_list_max - c_close) / (c_close / 100) <= x_atr_per * 5
 
     if distance_validated:
-        max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_max]
 
+        max_indices = [b for b, v in enumerate(check_list[c_room:]) if v == check_list_max]
         if len(max_indices) > 1:
             for g in range(1, len(max_indices)):
                 window = check_list[max_indices[g - 1] + 1:max_indices[g]]
@@ -40,7 +41,7 @@ def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
                     return check_list_max
 
         wiggle_room = float(os.getenv('WIGGLE_ROOM_ONE', 0.04)) / 100
-        max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
+        max_indices = [b for b, v in enumerate(check_list[c_room:]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
         if len(max_indices) > 1:
             for g in range(1, len(max_indices)):
                 window = check_list[max_indices[g - 1] + 1:max_indices[g]]
@@ -48,22 +49,27 @@ def upper_levels_check(c_high: list, c_close: float, x_atr_per, i: int, w: int):
                     return check_list_max
 
         wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
-        max_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
+        max_indices = [b for b, v in enumerate(check_list[c_room:]) if check_list_max >= v >= check_list_max - check_list_max * wiggle_room]
         if len(max_indices) > 2:
             for g in range(1, len(max_indices)):
                 window = check_list[max_indices[g - 1] + 1:max_indices[g]]
                 if len(window) >= w and all(v <= check_list_max for v in window):
                     return check_list_max
 
+        # max_found = any(m == check_list_max for m in check_list[c_room:-c_room])
+        # if max_found > 1:
+        #     return check_list_max
 
-def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
-    check_list = c_low[-i: -1]
+
+def lower_levels_check(check_list: list, c_close: float, x_atr_per, w: int):
+    c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
+
     check_list_min = min(check_list)
     distance_validated = abs(check_list_min - c_close) / (c_close / 100) <= x_atr_per * 5
 
     if distance_validated:
-        min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if v == check_list_min]
 
+        min_indices = [b for b, v in enumerate(check_list[c_room:]) if v == check_list_min]
         if len(min_indices) > 1:
             for g in range(1, len(min_indices)):
                 window = check_list[min_indices[g - 1] + 1:min_indices[g]]
@@ -71,7 +77,7 @@ def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
                     return check_list_min
 
         wiggle_room = float(os.getenv('WIGGLE_ROOM_ONE', 0.04)) / 100
-        min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
+        min_indices = [b for b, v in enumerate(check_list[c_room:]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
         if len(min_indices) > 1:
             for g in range(1, len(min_indices)):
                 window = check_list[min_indices[g - 1] + 1:min_indices[g]]
@@ -79,21 +85,25 @@ def lower_levels_check(c_low: list, c_close: float, x_atr_per, i: int, w: int):
                     return check_list_min
 
         wiggle_room = float(os.getenv('WIGGLE_ROOM_TWO', 0.08)) / 100
-        min_indices = [b for b, v in enumerate(check_list[4:-w - 1]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
+        min_indices = [b for b, v in enumerate(check_list[c_room:]) if check_list_min <= v <= check_list_min + check_list_min * wiggle_room]
         if len(min_indices) > 2:
             for g in range(1, len(min_indices)):
                 window = check_list[min_indices[g - 1] + 1:min_indices[g]]
                 if len(window) >= w and all(v >= check_list_min for v in window):
                     return check_list_min
 
+        # min_found = any(m == check_list_min for m in check_list[c_room:-c_room])
+        # if min_found > 1:
+        #     return check_list_min
+
 
 def levels_search(coins, wait_time):
+    c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
 
     for coin_data in coins:
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
         minute_spot_avg_volume = 0.0
         minute_futures_avg_volume = 0.0
-        c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
         frames = {'1m': 5, '5m': 1, '15m': 1}
 
         for timeframe, window in frames.items():
@@ -110,9 +120,9 @@ def levels_search(coins, wait_time):
                 f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
                 if timeframe == '1m':
                     minute_futures_avg_volume = avg_vol
-                for i in range(c_room, len(f_high)):
-                    upper = upper_levels_check(f_high, f_close[-1], x_atr_per, i, window)
-                    lower = lower_levels_check(f_low, f_close[-1], x_atr_per, i, window)
+                for i in range(len(f_high) - c_room):
+                    upper = upper_levels_check(f_high[i:], f_close[-1], x_atr_per, window)
+                    lower = lower_levels_check(f_low[i:], f_close[-1], x_atr_per, window)
                     with threading_lock:
                         if upper and not any(key[3] == upper for key in tracked_levels):
                             tracked_levels[(symbol, timeframe, "futures", upper, upper, "up")] = minute_futures_avg_volume, x_atr_per
@@ -129,17 +139,16 @@ def levels_search(coins, wait_time):
                 s_high, s_low, s_close, avg_vol = spot_klines[2], spot_klines[3], spot_klines[4], spot_klines[5]
                 if timeframe == '1m':
                     minute_spot_avg_volume = avg_vol
-                for i in range(c_room, len(s_high)):
-                    upper = upper_levels_check(s_high, s_close[-1], x_atr_per, i, window)
-                    lower = lower_levels_check(s_low, s_close[-1], x_atr_per, i, window)
+                for i in range(len(s_high) - c_room):
+                    upper = upper_levels_check(s_high[i:], s_close[-1], x_atr_per, window)
+                    lower = lower_levels_check(s_low[i:], s_close[-1], x_atr_per, window)
                     with threading_lock:
-                        if upper and not any(key[3] == upper for key in tracked_levels):
-                            tracked_levels[(symbol, timeframe, "spot", upper, max(futu_klines[2][-i: -1]), "up")] = minute_spot_avg_volume, x_atr_per
-                        if lower and not any(key[3] == lower for key in tracked_levels):
-                            tracked_levels[(symbol, timeframe, "spot", lower, min(futu_klines[3][-i: -1]), "dn")] = minute_spot_avg_volume, x_atr_per
+                        if upper and not any(key[3] == upper for key in tracked_levels) and isinstance(futu_klines, list):
+                            tracked_levels[(symbol, timeframe, "spot", upper, max(futu_klines[2][i:]), "up")] = minute_spot_avg_volume, x_atr_per
+                        if lower and not any(key[3] == lower for key in tracked_levels) and isinstance(futu_klines, list):
+                            tracked_levels[(symbol, timeframe, "spot", lower, min(futu_klines[3][i:]), "dn")] = minute_spot_avg_volume, x_atr_per
 
         time.sleep(wait_time)
-
 
 
 async def levels_threads(coins_top_list):
