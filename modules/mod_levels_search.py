@@ -152,7 +152,11 @@ def levels_search(coins, wait_time):
 
 
 async def levels_threads(coins_top_list):
-    coins_list = split_list(coins_top_list, 10)
+    if coins_top_list:
+        coins_list = split_list(coins_top_list, 10)
+    else:
+        coins_list = []
+
     request_weight = len(coins_top_list) * 9
     wait_time = 1 if request_weight <= 1100 else 5
 
