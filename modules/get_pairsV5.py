@@ -91,7 +91,6 @@ def get_pairs():
     futures_exchange_info_url = "https://fapi.binance.com/fapi/v1/exchangeInfo"
     response = requests.get(futures_exchange_info_url)
     response_data = response.json().get("symbols")
-
     for data in response_data:
         symbol = data['symbol']
         status = data['status']
@@ -128,6 +127,8 @@ def get_pairs():
     # ------ FILTER COINS BY TS's AND ATR's ------
     result = [res for res in shared_results]
     result = sorted(result, key=lambda x: x[3], reverse=True)
+
+
 
     if result and ts_dict:
         msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"

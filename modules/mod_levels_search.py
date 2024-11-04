@@ -104,7 +104,7 @@ def levels_search(coins, wait_time):
         symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
         minute_spot_avg_volume = 0.0
         minute_futures_avg_volume = 0.0
-        frames = {'1m': 5, '5m': 1, '15m': 1}
+        frames = {'1m': 10, '5m': 3, '15m': 2, '1h': 1}
 
         for timeframe, window in frames.items():
             futu_klines = combined_klines(symbol, timeframe, 99, 'futures') if ts_percent_futures != 0 else None
@@ -157,8 +157,8 @@ async def levels_threads(coins_top_list):
     else:
         coins_list = []
 
-    request_weight = len(coins_top_list) * 9
-    wait_time = 1 if request_weight <= 1100 else 5
+    request_weight = len(coins_top_list) * 12
+    wait_time = 1 if request_weight <= 1100 else 7
 
     the_threads = []
     for coins in coins_list:
@@ -174,7 +174,7 @@ async def levels_threads(coins_top_list):
 
     while not global_stop.is_set():
         m, s = datetime.now().strftime('%M'), datetime.now().strftime('%S')
-        if int(m) % 5 == 0 and int(s) == 0:
+        if int(m) % 10 == 0 and int(s) == 0:
 
             async with async_lock:
                 tracked_levels.clear()
