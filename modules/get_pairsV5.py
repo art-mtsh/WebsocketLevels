@@ -1,18 +1,6 @@
-import os
 import time
-import telebot
-from dotenv import load_dotenv
 from threading import Thread
-
-# import logging
-# from main_log_config import setup_logger
-# setup_logger()
-
-load_dotenv('keys.env')
-
-bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
-personal_bot = telebot.TeleBot(bot_token)
-personal_id = int(os.getenv('PERSONAL_ID'))
+from modules.telegram_handler import send_msg
 
 excluded = ['OMGUSDT', 'BTCUSDT', 'ETHUSDT', 'VANRYUSDT', 'BTCUSDT_250328', 'ETHUSDT_250328', 'SANTOSUSDT']
 
@@ -48,7 +36,7 @@ def calculate_pairs(pairs_dict, shared_results):
 
         except Exception as e:
             personal_message = f"⛔️ Error in downloading klines (get_pairs) for {symbol}: {e} {futures_klines}"
-            personal_bot.send_message(personal_id, personal_message)
+            send_msg(personal_message)
 
 
 def split_list(input_list: list, num_parts: int):
@@ -128,14 +116,12 @@ def get_pairs():
     result = [res for res in shared_results]
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
-
-
     if result and ts_dict:
         msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
     else:
         msg = 'No instruments avaliable!'
 
-    personal_bot.send_message(personal_id, msg)
+    send_msg(msg)
     time.sleep(60)
 
     return result
@@ -176,14 +162,17 @@ def combined_klines(symbol, frame, request_limit_length, market_type: str) -> li
             if len(c_open) == len(c_high) == len(c_low) == len(c_close) == len(c_volume):
                 return [c_time, c_open, c_high, c_low, c_close, avg_vol, buy_volume, sell_volume]
             else:
+                excluded.append(symbol)
                 return f"⛔️ Length error for klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"
         else:
+            excluded.append(symbol)
             return f"⛔️ Not enough ({response_length}/{request_limit_length}) klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"
 
     elif response.status_code == 429:
         msg = f"⛔️ {symbol} ({market_type}) RATE LIMIT REACHED !!! 429 CODE !!!"
-        personal_bot.send_message(personal_id, msg)
+        send_msg(msg)
         sys.exit("Program terminated due to Binance API rate limits.")
 
     else:
+        excluded.append(symbol)
         return f"⛔️ No klines data for {symbol} ({market_type}), status code {response.status_code}\n{url}"

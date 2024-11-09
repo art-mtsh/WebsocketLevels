@@ -1,17 +1,12 @@
-import os
 import sys
 import traceback
-import telebot
 import asyncio
 from dotenv import load_dotenv
 from modules.get_pairsV5 import get_pairs
 from modules.mod_market_depth_listener import listen_market_depth
 from modules.mod_levels_search import levels_threads, dropped_levels, tracked_levels
 from modules.global_stopper import global_stop, stopper_setter, sent_messages
-
-bot_token = os.getenv('PERSONAL_TELEGRAM_TOKEN')
-personal_bot = telebot.TeleBot(bot_token)
-personal_id = int(os.getenv('PERSONAL_ID'))
+from modules.telegram_handler import send_msg
 
 levels_lock = asyncio.Lock()
 semaphore = asyncio.Semaphore(5)
@@ -24,7 +19,7 @@ def global_exception_handler(exctype, value, tb):
 
     # Send the error message to Telegram
     try:
-        personal_bot.send_message(personal_id, f"An error occurred:\n{error_message}")
+        send_msg(f"An error occurred:\n{error_message}")
     except Exception as notify_error:
         # In case of failure to send the message, print it to stderr
         print(f"Failed to notify via bot: {notify_error}", file=sys.stderr)
@@ -62,4 +57,5 @@ async def monitor_time_and_control_threads():
 if __name__ == '__main__':
     sys.excepthook = global_exception_handler
     load_dotenv('params.env')
+    load_dotenv('keys.env')
     asyncio.run(monitor_time_and_control_threads())
