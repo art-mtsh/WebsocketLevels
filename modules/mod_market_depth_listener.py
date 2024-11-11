@@ -107,7 +107,6 @@ async def connect_and_listen(stream_url):
         # trying to connect to websocket
         try:
             async with websockets.connect(stream_url) as websocket:
-                send_msg("Connected to the WebSocket...")
 
                 while not global_stop.is_set():
 
@@ -119,6 +118,7 @@ async def connect_and_listen(stream_url):
                     if os.getenv(f'levels_check') != t:
                         os.environ[f'levels_check'] = t
                         print(f'{datetime.now().strftime("%H:%M:%S")} Dropped: {len(init_dropped_levels)}, Tracked by WS: {len(init_tracked_levels)}')
+                        os.environ['msg_tracked_levels'] = f"{datetime.now().strftime('%d.%m.%y %H:%M')}\nTracked levels: {len(tracked_levels)}"
 
                     try:
                         message = await websocket.recv()

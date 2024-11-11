@@ -1,9 +1,9 @@
 import time
+from datetime import datetime
 from threading import Thread
 from modules.telegram_handler import send_msg
 
 excluded = ['OMGUSDT', 'BTCUSDT', 'ETHUSDT', 'VANRYUSDT', 'BTCUSDT_250328', 'ETHUSDT_250328', 'SANTOSUSDT']
-
 
 def calculate_pairs(pairs_dict, shared_results):
     ts_filter_s = float(os.getenv('TICKSIZE_FILTER_SPOT', 0.05))
@@ -117,19 +117,13 @@ def get_pairs():
     result = sorted(result, key=lambda x: x[3], reverse=True)
 
     if result and ts_dict:
-        msg = f"Pairs got: {len(result)}/{len(ts_dict)}: {result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
+        os.environ['msg_last_update'] = f"{datetime.now().strftime('%d.%m.%y %H:%M')}\nPairs got: {len(result)}/{len(ts_dict)}:\n{result[-1][0]} ({round(result[-1][3], 2)}%) ... {result[0][0]} ({round(result[0][3], 2)}%)"
     else:
-        msg = 'No instruments avaliable!'
+        os.environ['msg_last_update'] = f"{datetime.now().strftime('%d.%m.%y %H:%M')}\nNo instruments found!"
 
-    send_msg(msg)
     time.sleep(60)
 
     return result
-
-
-# if __name__ == '__main__':
-#     get_pairs()
-
 
 import os
 import requests
