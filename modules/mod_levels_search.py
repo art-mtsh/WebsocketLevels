@@ -109,9 +109,9 @@ def levels_search(coins, wait_time):
                     send_msg(f'Ticksize for {symbol}(futures) is missing!')
                     continue
                 elif isinstance(futu_klines, str):
-                    send_msg(futu_klines)
+                    # send_msg(futu_klines)
                     excluded_due_error.append(symbol)
-                    send_msg(f'{symbol} is excluded')
+                    # send_msg(f'{symbol} is excluded')
                     continue
                 else:
                     f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
