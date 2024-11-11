@@ -94,13 +94,14 @@ def levels_search(coins, wait_time):
     c_room = int(os.getenv('STARTING_ROOM'))  # стартова кімната з пошуку двох точок
 
     for coin_data in coins:
-        if coin_data[0] not in excluded_due_error:
-            symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
-            minute_spot_avg_volume = 0.0
-            minute_futures_avg_volume = 0.0
-            frames = {'1m': 10, '5m': 3, '15m': 2, '1h': 1}
+        symbol, ts_percent_futures, ts_percent_spot, x_atr_per = coin_data[0], coin_data[1], coin_data[2], coin_data[3]
+        minute_spot_avg_volume = 0.0
+        minute_futures_avg_volume = 0.0
+        frames = {'1m': 10, '5m': 3, '15m': 2, '1h': 1}
 
-            for timeframe, window in frames.items():
+        for timeframe, window in frames.items():
+            if symbol not in excluded_due_error:
+
                 futu_klines = combined_klines(symbol, timeframe, 99, 'futures') if ts_percent_futures != 0 else None
                 spot_klines = combined_klines(symbol, timeframe, 99, 'spot') if ts_percent_spot != 0 else None
 
@@ -109,8 +110,8 @@ def levels_search(coins, wait_time):
                     continue
                 elif isinstance(futu_klines, str):
                     send_msg(futu_klines)
-                    excluded_due_error.append(coin_data[0])
-                    send_msg(f'{coin_data[0]} is excluded')
+                    excluded_due_error.append(symbol)
+                    send_msg(f'{symbol} is excluded')
                     continue
                 else:
                     f_high, f_low, f_close, avg_vol = futu_klines[2], futu_klines[3], futu_klines[4], futu_klines[5]
